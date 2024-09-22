@@ -1,0 +1,162 @@
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader('UTF-8') { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def flutterRoot = localProperties.getProperty('flutter.sdk')
+if (flutterRoot == null) {
+    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+}
+
+def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
+if (flutterVersionCode == null) {
+    flutterVersionCode = '1'
+}
+
+def flutterVersionName = localProperties.getProperty('flutter.versionName')
+if (flutterVersionName == null) {
+    flutterVersionName = '1.0'
+}
+
+//apply plugin: 'com.google.gms.google-services'
+apply plugin: 'com.android.application'
+apply plugin: 'kotlin-android'
+apply plugin: 'kotlin-kapt'
+apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+android {
+    compileSdk 34
+    ndkVersion '27.0.12077973'
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    sourceSets {
+        main.java.srcDirs += 'src/main/kotlin'
+    }
+
+    defaultConfig {
+        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        applicationId "com.lge.petcarezone"
+        // You can update the following values to match your application needs.
+        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
+        minSdkVersion 24
+        targetSdkVersion 34
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+        vectorDrawables {
+            useSupportLibrary = true
+        }
+    }
+
+    signingConfigs {
+        release {
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
+            storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
+            storePassword keystoreProperties['storePassword']
+        }
+    }
+    buildTypes {
+        release {
+            // TODO: Add your own signing config for the release build.
+            // Signing with the debug keys for now, so `flutter run --release` works.
+            signingConfig signingConfigs.release
+            minifyEnabled true // 코드 축소 활성화
+            shrinkResources true
+//            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.1"
+    }
+
+    packagingOptions {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    useLibrary 'org.apache.http.legacy'
+    namespace 'com.lge.petcarezone'
+    buildToolsVersion '34.0.0'
+}
+
+flutter {
+    source '../..'
+}
+
+dependencies {
+//    implementation platform("com.google.firebase:firebase-bom:33.2.0")
+//    implementation "com.google.firebase:firebase-analytics"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+
+    implementation "androidx.core:core-ktx:1.13.1"
+//    implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.8.3"
+    implementation "androidx.activity:activity-compose:1.9.0"
+    implementation platform("androidx.compose:compose-bom:2023.08.00")
+    implementation "androidx.compose.ui:ui"
+    implementation "androidx.compose.ui:ui-graphics"
+    implementation "androidx.compose.ui:ui-tooling-preview"
+    implementation "androidx.compose.material3:material3"
+
+    implementation "androidx.compose.runtime:runtime-livedata:1.6.8"
+    testImplementation "junit:junit:4.13.2"
+    androidTestImplementation "androidx.test.ext:junit:1.2.1"
+    androidTestImplementation "androidx.test.espresso:espresso-core:3.6.1"
+    androidTestImplementation platform("androidx.compose:compose-bom:2023.08.00")
+    androidTestImplementation "androidx.compose.ui:ui-test-junit4"
+    debugImplementation "androidx.compose.ui:ui-tooling"
+    debugImplementation "androidx.compose.ui:ui-test-manifest"
+
+    debugImplementation "com.squareup.leakcanary:leakcanary-android:2.14"
+    kapt "androidx.room:room-compiler:2.6.1"
+    implementation "androidx.room:room-common:2.6.1"
+    implementation "androidx.room:room-ktx:2.6.1"
+
+    implementation "com.airbnb.android:lottie-compose:6.1.0"
+    implementation "androidx.core:core-splashscreen:1.2.0-alpha01"
+
+    implementation "org.java-websocket:Java-WebSocket:1.5.0"
+    implementation "javax.jmdns:jmdns:3.4.1"
+    implementation fileTree(dir: "modules/firetv/libs", include: "*.jar")
+    implementation "androidx.mediarouter:mediarouter:1.2.0"
+    implementation "androidx.annotation:annotation:1.0.0"
+    implementation "androidx.preference:preference:1.1.1"
+    implementation "androidx.appcompat:appcompat:1.3.1"
+    implementation "com.googlecode.plist:dd-plist:1.23"
+    implementation "com.nimbusds:srp6a:2.1.0"
+    implementation "net.i2p.crypto:eddsa:0.3.0"
+    implementation "com.google.android.gms:play-services-cast-framework:9.4.0"
+    implementation files("libs/lgcast-android-lib.jar")
+    testImplementation "org.apache.maven:maven-ant-tasks:2.1.3"
+    testImplementation "junit:junit:4.12"
+    testImplementation "org.robolectric:robolectric:2.4"
+    testImplementation "org.mockito:mockito-all:1.10.19"
+    testImplementation "org.powermock:powermock-api-mockito:1.6.2"
+    testImplementation "xmlunit:xmlunit:1.4"
+}
