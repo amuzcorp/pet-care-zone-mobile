@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/1_power_check_page.dart';
 import 'package:petcarezone/services/user_service.dart';
@@ -19,10 +20,17 @@ class MyAppState extends State<MyApp> {
   final UserService userService = UserService();
   late Future<Widget> _initialPage;
 
+  Future requestPermission() async {
+    await Permission.camera.request();
+    await Permission.microphone.request();
+    await Permission.mediaLibrary.request();
+  }
+
   @override
   void initState() {
     super.initState();
     _initialPage = userService.initializeApp();
+    requestPermission();
   }
   @override
   Widget build(BuildContext context) {

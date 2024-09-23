@@ -26,6 +26,21 @@ dependencies:
   wifi_scan: ^0.4.1+1
   wifi_iot: ^0.3.19+1
   flutter_blue_plus: ^1.32.12
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.7
+  intl: ^0.19.0
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+
+flutter_native_splash:
+  color: "#ffffff"
+  image: assets/icons/app_icon.png
+  android: true
+  ios: true
+  fullscreen: true
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +69,7 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
       - pubspec.yaml
+      - assets/icons/app_icon.png
       - assets/images/product_connection/
       - assets/icons/product_connection/
       - assets/data/
