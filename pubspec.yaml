@@ -4,7 +4,7 @@ description: Pet care zone.
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
-version: 0.2.2+6
+version: 0.2.2+7
 
 environment:
   sdk: '>=2.19.2 <3.0.0'
@@ -29,6 +29,8 @@ dependencies:
   flutter_launcher_icons: ^0.13.1
   flutter_native_splash: ^2.3.7
   intl: ^0.19.0
+  rxdart: ^0.28.0
+  device_info_plus: ^9.1.2
 
 flutter_icons:
   android: true

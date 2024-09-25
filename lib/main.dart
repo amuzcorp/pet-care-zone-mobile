@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/1_power_check_page.dart';
 import 'package:petcarezone/services/user_service.dart';
+import 'package:petcarezone/utils/permissionCheck.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,19 +18,15 @@ class MyApp extends StatefulWidget {
 
 class MyAppState extends State<MyApp> {
   final UserService userService = UserService();
+  final PermissionCheck permissionCheck = PermissionCheck();
   late Future<Widget> _initialPage;
 
-  Future requestPermission() async {
-    await Permission.camera.request();
-    await Permission.microphone.request();
-    await Permission.mediaLibrary.request();
-  }
 
   @override
   void initState() {
     super.initState();
     _initialPage = userService.initializeApp();
-    requestPermission();
+    permissionCheck.requestPermission();
   }
   @override
   Widget build(BuildContext context) {

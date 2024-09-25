@@ -1,5 +1,8 @@
 package com.lge.petcarezone
 
+import android.content.Intent
+import android.net.Uri
+import java.io.File
 import androidx.lifecycle.MutableLiveData
 import com.connectsdk.service.webos.WebOSTVServiceSocketClient
 import com.lge.petcarezone.module.activities.IActivityController
@@ -16,10 +19,29 @@ import kotlinx.coroutines.flow.StateFlow
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.lge.petcarezone/discovery"
     private val LOGCHANNEL = "com.lge.petcarezone/logs"
+    private val MEDIACHANNEL = "com.lge.petcarezone/media"
     private lateinit var discoveryListener: DiscoveryListener
+
+    private fun scanFile(file: File) {
+        val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+        val contentUri: Uri = Uri.fromFile(file)
+        mediaScanIntent.data = contentUri
+        sendBroadcast(mediaScanIntent)
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        val mediaChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MEDIACHANNEL)
+        mediaChannel.setMethodCallHandler { methodCall, result ->
+            if (methodCall.method == "scanFile") {
+                val filePath = methodCall.argument<String>("filePath")
+                scanFile(File(filePath!!))
+                result.success(null)
+            } else {
+                result.notImplemented()
+            }
+        }
 
         val logChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, LOGCHANNEL)
         logChannel.setMethodCallHandler { call, result ->
