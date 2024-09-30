@@ -1,18 +1,18 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mqtt5_client/mqtt5_client.dart';
+import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:petcarezone/constants/api_urls.dart';
+import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/user_service.dart';
-import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/utils/permissionCheck.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-
-import 'package:mqtt5_client/mqtt5_client.dart';
-import 'package:mqtt5_client/mqtt5_server_client.dart';
 
 import '../../utils/logger.dart';
 
@@ -300,28 +300,34 @@ class _WebViewPageState extends State<WebViewPage> {
     super.dispose();
   }
 
+  Future<bool> onWillPopFunction() async {
+    if (!Platform.isAndroid) {
+      return true;
+    } else {
+      final currentUrl = await controller.currentUrl();
+      if (currentUrl ==
+              'https://amuzcorp-pet-care-zone-webview.vercel.app/home' ||
+          currentUrl ==
+              "https://amuzcorp-pet-care-zone-webview.vercel.app/profile/register") {
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => widget.backPage),
+          );
+        }
+      } else {
+        controller.runJavaScript(
+            "if (window.location.pathname !== '/') { window.history.back(); }");
+      }
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: PopScope(
-        canPop: Platform.isAndroid ? false : true,
-        onPopInvokedWithResult: (bool _, dynamic __) async {
-          final currentUrl = await controller.currentUrl();
-          if (currentUrl ==
-                  'https://amuzcorp-pet-care-zone-webview.vercel.app/home' ||
-              currentUrl ==
-                  "https://amuzcorp-pet-care-zone-webview.vercel.app/profile/register") {
-            if (mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => widget.backPage),
-              );
-            }
-          } else {
-            controller.runJavaScript(
-                "if (window.location.pathname !== '/') { window.history.back(); }");
-          }
-        },
+      body: WillPopScope(
+        onWillPop: onWillPopFunction,
         child: WebViewWidget(
           controller: controller
             ..setJavaScriptMode(JavaScriptMode.unrestricted)
