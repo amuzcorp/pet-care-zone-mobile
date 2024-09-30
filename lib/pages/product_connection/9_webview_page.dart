@@ -17,19 +17,18 @@ import 'package:mqtt5_client/mqtt5_server_client.dart';
 import '../../utils/logger.dart';
 
 class WebViewPage extends StatefulWidget {
-  const WebViewPage({
-    super.key,
-    required this.uri,
-  });
+  const WebViewPage({super.key, required this.uri, required this.backPage});
 
   final Uri uri;
+  final Widget backPage;
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
 class _WebViewPageState extends State<WebViewPage> {
-  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel =
+      MethodChannel("com.lge.petcarezone/media");
   late MqttServerClient client;
   late final WebViewController controller;
   late final PlatformWebViewControllerCreationParams params;
@@ -61,7 +60,8 @@ class _WebViewPageState extends State<WebViewPage> {
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i('Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId, deviceIp: $deviceIp');
+    logD.i(
+        'Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId, deviceIp: $deviceIp');
     await trackPetId();
   }
 
@@ -76,7 +76,7 @@ class _WebViewPageState extends State<WebViewPage> {
     print('userId $userId');
     print('deviceId $deviceId');
     print('petId $petId');
-    // await getLocalStorageValues();
+    await getLocalStorageValues();
   }
 
   Future setUserInfo() async {
@@ -91,7 +91,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// 1. pet id check
   Future<void> trackPetId() async {
-    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller
+        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
     int localStoragePetId = int.tryParse(petIdStr) ?? 0;
 
@@ -104,6 +105,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
       /// 3. device에 pet,user info 등록
       await setPetInfo();
+
       /// 4. pet,user info 등록된 경우 device mqtt 구독
       if (isSetPetInfo) {
         await mqttSubscribe();
@@ -118,7 +120,8 @@ class _WebViewPageState extends State<WebViewPage> {
 
   Future mqttCertInitialize() async {
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey =
+        await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -166,7 +169,8 @@ class _WebViewPageState extends State<WebViewPage> {
       final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
       final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
 
-      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i(
+          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
 
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
@@ -174,7 +178,8 @@ class _WebViewPageState extends State<WebViewPage> {
       client.updates.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
         for (dynamic message in messages) {
           final payload = message.payload as MqttPublishMessage;
-          final payloadMsg = MqttUtilities.bytesToStringAsString(payload.payload.message!);
+          final payloadMsg =
+              MqttUtilities.bytesToStringAsString(payload.payload.message!);
 
           final jsonPayload = jsonDecode(payloadMsg) as Map<String, dynamic>;
           if (message.topic == stateTopic) {
@@ -226,11 +231,16 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   Future getLocalStorageValues() async {
-    final accessToken = await controller.runJavaScriptReturningResult("localStorage.getItem('accessToken')");
-    final userId = await controller.runJavaScriptReturningResult("localStorage.getItem('userId')");
-    final petId = await controller.runJavaScriptReturningResult("localStorage.getItem('petId')");
-    final deviceId = await controller.runJavaScriptReturningResult("localStorage.getItem('deviceId')");
-    logD.i('Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
+    final accessToken = await controller
+        .runJavaScriptReturningResult("localStorage.getItem('accessToken')");
+    final userId = await controller
+        .runJavaScriptReturningResult("localStorage.getItem('userId')");
+    final petId = await controller
+        .runJavaScriptReturningResult("localStorage.getItem('petId')");
+    final deviceId = await controller
+        .runJavaScriptReturningResult("localStorage.getItem('deviceId')");
+    logD.i(
+        'Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   Future<void> saveFile(String dataURL, String format) async {
@@ -249,7 +259,8 @@ class _WebViewPageState extends State<WebViewPage> {
         await folder.create(recursive: true);
       }
 
-      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath =
+          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -292,33 +303,53 @@ class _WebViewPageState extends State<WebViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: WebViewWidget(
-        controller: controller
-          ..setJavaScriptMode(JavaScriptMode.unrestricted)
-          ..setNavigationDelegate(
-            NavigationDelegate(
-              onPageStarted: (String url) async {
-                await userInfoInit();
-                await trackPetId();
+      body: PopScope(
+        canPop: Platform.isAndroid ? false : true,
+        onPopInvokedWithResult: (bool _, dynamic __) async {
+          final currentUrl = await controller.currentUrl();
+          if (currentUrl ==
+                  'https://amuzcorp-pet-care-zone-webview.vercel.app/home' ||
+              currentUrl ==
+                  "https://amuzcorp-pet-care-zone-webview.vercel.app/profile/register") {
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => widget.backPage),
+              );
+            }
+          } else {
+            controller.runJavaScript(
+                "if (window.location.pathname !== '/') { window.history.back(); }");
+          }
+        },
+        child: WebViewWidget(
+          controller: controller
+            ..setJavaScriptMode(JavaScriptMode.unrestricted)
+            ..setNavigationDelegate(
+              NavigationDelegate(
+                onPageStarted: (String url) async {
+                  await userInfoInit();
+                  await trackPetId();
+                },
+                // onPageFinished: (String url) {},
+                // onNavigationRequest: (NavigationRequest request) {
+                //   if (request.url.startsWith(ApiUrls.webViewUrl)) {
+                //     return NavigationDecision.prevent;
+                //   }
+                //   return NavigationDecision.navigate;
+                // },
+              ),
+            )
+            ..addJavaScriptChannel(
+              'Flutter',
+              onMessageReceived: (JavaScriptMessage message) async {
+                await jsChannelListener(message);
               },
-              // onPageFinished: (String url) {},
-              // onNavigationRequest: (NavigationRequest request) {
-              //   if (request.url.startsWith(ApiUrls.webViewUrl)) {
-              //     return NavigationDecision.prevent;
-              //   }
-              //   return NavigationDecision.navigate;
-              // },
+            )
+            ..loadRequest(
+              Uri.parse(ApiUrls.webViewUrl),
             ),
-          )
-          ..addJavaScriptChannel(
-            'Flutter',
-            onMessageReceived: (JavaScriptMessage message) async {
-              await jsChannelListener(message);
-            },
-          )
-          ..loadRequest(
-            Uri.parse(ApiUrls.webViewUrl),
-          ),
+        ),
       ),
     );
   }

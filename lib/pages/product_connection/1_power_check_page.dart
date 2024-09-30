@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
@@ -28,8 +29,11 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
 
     if (userInfo != null) {
       String userId = userInfo.userId;
-      int petId = userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
-      String? deviceId = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceId : "";
+      int petId =
+          userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
+      String? deviceId = userInfo.deviceList.isNotEmpty
+          ? userInfo.deviceList.first.deviceId
+          : "";
 
       final prefs = await SharedPreferences.getInstance();
 
@@ -41,7 +45,8 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
 
       if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
         setState(() {
-          destinationPage = WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl));
+          destinationPage = WebViewPage(
+              uri: Uri.parse(ApiUrls.webViewUrl), backPage: PowerCheckPage());
         });
       }
     } else {
@@ -69,7 +74,15 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
       ),
       bottomButton: BasicButton(
         text: '전원을 켰어요',
-        destinationPage: destinationPage,
+        onPressed: () => {
+          if (mounted)
+            {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => destinationPage),
+              )
+            }
+        },
       ),
     );
   }
