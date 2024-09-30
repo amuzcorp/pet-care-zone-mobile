@@ -304,7 +304,7 @@ class _WebViewPageState extends State<WebViewPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: PopScope(
-        canPop: false,
+        canPop: Platform.isAndroid ? false : true,
         onPopInvokedWithResult: (bool _, dynamic __) async {
           final currentUrl = await controller.currentUrl();
           if (currentUrl ==
@@ -317,9 +317,10 @@ class _WebViewPageState extends State<WebViewPage> {
                 MaterialPageRoute(builder: (context) => widget.backPage),
               );
             }
+          } else {
+            controller.runJavaScript(
+                "if (window.location.pathname !== '/') { window.history.back(); }");
           }
-          controller.runJavaScript(
-              "if (window.location.pathname !== '/') { window.history.back(); }");
         },
         child: WebViewWidget(
           controller: controller
