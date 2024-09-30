@@ -40,6 +40,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
       );
     }
   }
+
   void _updateDeviceName(String newName) {
     setState(() {
       deviceName = newName;
@@ -88,8 +89,21 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
           ),
           BasicButton(
             text: "반려동물 프로필 등록",
-            onPressed: modifyDeviceInfo,
-            destinationPage: WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl)),
+            onPressed: () => {
+              modifyDeviceInfo(),
+              if (mounted)
+                {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WebViewPage(
+                        uri: Uri.parse(ApiUrls.webViewUrl),
+                        backPage: RegisterCompletePage(),
+                      ),
+                    ),
+                  )
+                }
+            },
           ),
         ],
       ),
