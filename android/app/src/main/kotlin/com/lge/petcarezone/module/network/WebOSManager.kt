@@ -14,7 +14,6 @@ object WebOSManager {
     fun initialize(device: ConnectableDevice?) {
         mDevice = device
         webOSTVService = device!!.getServiceByName("webOS TV") as WebOSTVService
-        webOSTVService!!.connectMouse()
     }
 
     fun getDevice(): ConnectableDevice? {

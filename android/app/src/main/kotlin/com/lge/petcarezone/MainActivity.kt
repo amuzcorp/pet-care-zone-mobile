@@ -15,6 +15,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.coroutines.flow.StateFlow
+import org.json.JSONObject
 
 class MainActivity: FlutterActivity() {
     private val CHANNEL = "com.lge.petcarezone/discovery"
@@ -108,6 +109,15 @@ class MainActivity: FlutterActivity() {
                         } ?: result.error("INVALID_JSON", "Failed to convert JSON to ConnectableDevice", null)
                     } ?: result.error("UNAVAILABLE", "Device JSON not available.", null)
                 }
+                "requestParingKey" -> {
+                    val deviceJson = call.argument<String>("device")
+                    deviceJson?.let {
+                        val device = jsonToDevice(it)
+                        device?.let { device ->
+                            DeviceListener.requestParingKey(this, device)
+                        } ?: result.error("INVALID_JSON", "Failed to convert JSON to ConnectableDevice", null)
+                    } ?: result.error("UNAVAILABLE", "Device JSON not available.", null)
+                }
                 "sendPairingKey" -> {
                     val pinCode = call.argument<String>("pinCode")
                     pinCode?.let { DeviceListener.sendPairingKey(it) }
@@ -116,6 +126,17 @@ class MainActivity: FlutterActivity() {
                 "deviceProvision" -> {
                     discoveryListener.deviceProvision()
                     result.success(null)
+                }
+                "webOSRequest" -> {
+                    val uri = call.argument<String>("uri")
+                    val payload = call.argument<Map<String, Any>>("payload")
+
+                    if (uri != null && payload != null) {
+                        discoveryListener.webOSRequest(uri, JSONObject(payload))
+                        result.success(null)
+                    } else {
+                        result.error("INVALID_ARGS", "Uri or Payload missing", null)
+                    }
                 }
                 else -> result.notImplemented()
             }

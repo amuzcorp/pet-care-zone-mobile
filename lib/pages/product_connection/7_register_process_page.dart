@@ -21,7 +21,7 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
   DeviceService deviceService = DeviceService();
   double progressValue = 0;
 
-  Future<void> handleDeviceRegistrationAndProvision() async {
+  Future handleDeviceRegistrationAndProvision() async {
     final prefs = await SharedPreferences.getInstance();
 
     try {
@@ -30,23 +30,21 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
         print('No device info available.');
         return;
       }
-      final deviceId = device.deviceId;
-      await prefs.setString('deviceId', deviceId!);
+      // final deviceId = device.deviceId;
+      // await prefs.setString('deviceId', deviceId!);
+      //
+      // final registerResult = await deviceService.registerDevice(device);
+      // logD.i('Device register result : $registerResult');
+      //
+      // final provisionResult = await deviceService.provisionDevice(deviceId);
+      // logD.i('Device provision result : $provisionResult');
 
-      final registerResult = await deviceService.registerDevice(device);
-      logD.i('Device register result : $registerResult');
-
-      final provisionResult = await deviceService.provisionDevice(deviceId);
-      logD.i('Device provision result : $provisionResult');
-
-
-      if (provisionResult?['message'] == 'Success' || registerResult?['message'].contains('already')) {
-        await Future.delayed(const Duration(seconds: 5));
-        if (mounted) {
-          return navigator(context, () => const RegisterCompletePage());
-        }
+      // if (provisionResult?['message'] == 'Success' || registerResult?['message'].contains('already')) {
+      //   await Future.delayed(const Duration(seconds: 5));
+      if (mounted) {
+        return navigator(context, () => const RegisterCompletePage());
+        // }
       }
-
     } catch (e) {
       _showErrorDialog('Failed to register or provision device: $e');
     }

@@ -27,10 +27,7 @@ class WifiService {
   void startWifiDiscovery() {
     scanTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
       if (await checkPermissions()) {
-        if (!isScan) {
-          await startScan();
-          isScan = true;
-        }
+        await startScan();
         await scanWifiList();
       } else {
         await Permission.location.request();

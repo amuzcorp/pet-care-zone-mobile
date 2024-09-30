@@ -71,16 +71,16 @@ class UserService {
   Future<bool> isTokenValid() async {
     final prefs = await SharedPreferences.getInstance();
     final tokenTime = prefs.getInt('tokenTime');
-    if (tokenTime != null) {
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final tokenAge = currentTime - tokenTime;
-      // if (tokenAge > 0) {
-      //   await prefs.remove('accessToken');
-      //   await prefs.remove('user');
-      //   return false;
-      // }
-      return true;
-    }
+    // if (tokenTime != null) {
+    //   final currentTime = DateTime.now().millisecondsSinceEpoch;
+    //   final tokenAge = currentTime - tokenTime;
+    //   // if (tokenAge > 0) {
+    //   //   await prefs.remove('accessToken');
+    //   //   await prefs.remove('user');
+    //   //   return false;
+    //   // }
+    //   return true;
+    // }
     return false;
   }
 

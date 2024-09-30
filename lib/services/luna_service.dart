@@ -1,75 +1,81 @@
 import 'dart:convert';
 
-import 'package:dartssh2/dartssh2.dart';
+import 'package:flutter/services.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 
 import '../utils/logger.dart';
 
 class LunaService {
-
-  Future runSSHCommand({
-    required String sshHost,
-    required String command,
-  }) async {
-    final client = SSHClient(
-      await SSHSocket.connect(sshHost, 22),
-      username: 'root',
-    );
-
+  static const MethodChannel channel = MethodChannel('com.lge.petcarezone/discovery');
+  Future<void> webOSRequest(uri, payload) async {
     try {
-      final result = await client.run(command);
-      final decodedResult = utf8.decode(result);
-      logD.i('$command\n-${utf8.decode(result)}');
-      return jsonDecode(decodedResult);
-    } catch (e) {
-      logD.e('Error: $e');
-      return e;
-    } finally {
-      client.close();
+      logD.i("webOS request sent!\nuri: $uri\npayload: $payload");
+      await channel.invokeMethod('webOSRequest', {'uri': uri, 'payload': payload});
+    } on PlatformException catch (e) {
+      logD.w("Failed to request '${e.message}'.");
     }
   }
 
-  Future checkWifiStatus(String sshHost) async {
-    const String command = ApiUrls.lunaWifiStatusUrl;
+  Future lunaTest() async {
+    const String uri = ApiUrls.lunaTest;
     try {
-      return await runSSHCommand(sshHost: sshHost, command: command);
+      webOSRequest(uri, {});
     } catch (e) {
       throw Exception('Failed Response $e');
     }
   }
 
-  Future scanWifi(String sshHost) async {
-    const String command = ApiUrls.lunaWifiScan;
+  Future checkWifiStatus() async {
+    const String uri = ApiUrls.lunaWifiStatusUrl;
     try {
-      final commandResult = await runSSHCommand(sshHost: sshHost, command: command);
-      return commandResult['foundNetworks'];
+      webOSRequest(uri, {});
     } catch (e) {
       throw Exception('Failed Response $e');
     }
   }
 
-  Future connectWifi(String sshHost, String wifi, String passKey) async {
-    final String command = ApiUrls.getLunaWifiConnectUrl(wifi, passKey);
+  Future scanWifi() async {
+    final String uri = await ApiUrls.lunaWifiScan['uri'];
+    final Map payload = await ApiUrls.lunaWifiScan['payload'];
     try {
-       return await runSSHCommand(sshHost: sshHost, command: command);
-     } catch (e) {
-       throw Exception('Failed Response $e');
-     }
-  }
-
-  Future startProvision(String sshHost) async {
-    const String command = ApiUrls.lunaProvisionUrl;
-    try {
-      return await runSSHCommand(sshHost: sshHost, command: command);
+      await webOSRequest(uri, payload);
     } catch (e) {
       throw Exception('Failed Response $e');
     }
   }
 
-  Future setPetInfo(String sshHost, String userId, String petId) async {
-    final String command = ApiUrls.setPetInfo(userId, petId);
+  Future connectWifi(String wifi, String passKey) async {
+    final wifiData = ApiUrls.getLunaWifiConnectUrl(wifi, passKey);
+    print('wifiData $wifiData');
+
+    final String? uri = wifiData['uri'];
+    final String? payloadString = wifiData['payload'];
+    print('uri $uri, payloadString: $payloadString');
+
+    final Map<String, dynamic>? payload = jsonDecode(payloadString!);
+    print('Decoded payload: $payload');
+
     try {
-      return await runSSHCommand(sshHost: sshHost, command: command);
+      await webOSRequest(uri, payload);
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
+
+  Future startProvision() async {
+    const String uri = ApiUrls.lunaProvisionUrl;
+    try {
+      webOSRequest(uri, {});
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
+  Future lunaGetProfileList() async {
+    const String uri = ApiUrls.lunaGetProfileList;
+    try {
+      webOSRequest(uri, {});
     } catch (e) {
       throw Exception('Failed Response $e');
     }

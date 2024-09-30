@@ -12,6 +12,7 @@ import com.connectsdk.service.command.ServiceCommand
 import com.connectsdk.service.command.ServiceCommandError
 import com.lge.petcarezone.module.activities.IActivityController
 import io.flutter.plugin.common.MethodChannel
+import org.json.JSONException
 import org.json.JSONObject
 
 class DiscoveryListener(private val controller: IActivityController) : DiscoveryManagerListener {
@@ -83,12 +84,12 @@ class DiscoveryListener(private val controller: IActivityController) : Discovery
 //                        ConnectableDevice.KEY_LAST_DETECTED to device.lastDetection,
 //                    )
 
-                    // Update device list and notify Flutter
-                    mDeviceList.postValue(currentList + device)
-                    WebOSManager.mDeviceList.postValue(currentList + device)
-                    controller.setLoading(false)
-                    stopScan()
-                    channel?.invokeMethod("onDeviceAdded", deviceInfo) // Sending device info to Flutter
+                // Update device list and notify Flutter
+                mDeviceList.postValue(currentList + device)
+                WebOSManager.mDeviceList.postValue(currentList + device)
+                controller.setLoading(false)
+                stopScan()
+                channel?.invokeMethod("onDeviceAdded", deviceInfo) // Sending device info to Flutter
 //                }
             }
         }
@@ -129,14 +130,74 @@ class DiscoveryListener(private val controller: IActivityController) : Discovery
         Log.d("onDiscoveryFailed", error.toString())
     }
 
+    fun webOSRequest(uri: String, payload: JSONObject) {
+        if (DeviceListener.mDevice != null) {
+            webOSTVService = DeviceListener.mDevice!!.getServiceByName("webOS TV") as WebOSTVService
+            Log.d("CHECK ServiceCommand", webOSTVService.toString())
+            if (webOSTVService != null) {
+                Log.d("CHECK webOSRequest", "URI: $uri, Payload: $payload")
+                val command = ServiceCommand<ResponseListener<Any>>(
+                    webOSTVService,
+                    uri,
+                    payload,
+                    true,
+                    object : ResponseListener<Any> {
+                        override fun onSuccess(response: Any) {
+                            Log.d("ServiceCommand Response", response.toString())
+                            // Send only the necessary response data to Flutter
+                            channel?.invokeMethod("webOSRequest", mapOf("success" to true, "response" to response.toString()))
+                        }
+
+                        override fun onError(error: ServiceCommandError) {
+                            Log.d("ServiceCommand Error", error.toString())
+                            // Send only the necessary error data to Flutter
+                            channel?.invokeMethod("webOSRequest", mapOf("success" to false, "error" to error.toString()))
+                        }
+                    })
+
+                command.send()
+                Log.d("Command", "Command sent: URI - $uri, Payload - $payload")
+            } else {
+                Log.d("WebOSTVService not available", "Check the webOS TV Service")
+            }
+        } else {
+            Log.d("Connection Status", "Check the connection")
+        }
+    }
+
+    fun getWifiStatus() {
+        val uri = "luna://com.webos.service.wifi/getstatus"
+        val payload = JSONObject()
+
+        // Request를 보내는 ServiceCommand 생성
+        val request = ServiceCommand<ResponseListener<Any>>(webOSTVService, uri, payload, true,
+            object : ResponseListener<Any> {
+                override fun onSuccess(response: Any) {
+                    Log.d("Provision Response", response.toString())
+                    // Send only the necessary response data to Flutter
+                    channel?.invokeMethod("deviceProvision", mapOf("success" to true, "response" to response.toString()))
+                }
+
+                override fun onError(error: ServiceCommandError) {
+                    Log.d("Provision Error", error.toString())
+                    // Send only the necessary error data to Flutter
+                    channel?.invokeMethod("deviceProvision", mapOf("success" to false, "error" to error.toString()))
+                }
+            })
+
+
+        // Command 실행
+        request.send()
+    }
+
     fun deviceProvision() {
         if (DeviceListener.mDevice != null) {
             webOSTVService = DeviceListener.mDevice!!.getServiceByName("webOS TV") as WebOSTVService
             Log.d("webOSTVService", webOSTVService.toString())
 
             if (webOSTVService != null) {
-                val uri = "luna://com.webos.service.petcareservice/mqtt/executeProvisioning"
-//                val uri = "ssap://system/getSystemInfo"
+//                val uri = "luna://com.webos.service.petcareservice/mqtt/executeProvisioning"
+                val uri = "luna://com.webos.service.wifi/getstatus"
                 val payload = JSONObject()
 
                 val command = ServiceCommand<ResponseListener<Any>>(

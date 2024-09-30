@@ -919,6 +919,7 @@ public class DiscoveryManager implements ConnectableDeviceListener, DiscoveryPro
         DeviceService deviceService = DeviceService.getService(deviceServiceClass, desc, serviceConfig);
 
         if (deviceService != null) {
+            Log.d("Check Device Service", deviceService.toString());
             deviceService.setServiceDescription(desc);
             device.addService(deviceService);
         }

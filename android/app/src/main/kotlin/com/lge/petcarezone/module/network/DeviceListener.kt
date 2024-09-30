@@ -67,10 +67,10 @@ object DeviceListener : ConnectableDeviceListener {
             // 장치의 서비스 목록을 가져와서 로그에 출력
             val allServices = device.services
             if (allServices.isEmpty()) {
-                Log.d("DeviceListener", "No services available")
+                Log.d("Check DeviceListener", "No services available")
             } else {
                 allServices.forEach { service ->
-                    Log.d("DeviceListener", "Service: $service")
+                    Log.d("Check DeviceListener", "Service: $service")
                 }
             }
 
@@ -79,8 +79,16 @@ object DeviceListener : ConnectableDeviceListener {
 
             // 장치에 리스너를 추가
             device.addListener(this)
+        } ?: run {
+            Log.e("DeviceListener", "Device is null")
+        }
+    }
 
-            // 장치와의 연결을 시도
+    fun requestParingKey(context: Context, device: ConnectableDevice?) {
+        this.channel = channel
+        appContext = context.applicationContext
+        mDevice = device
+        mDevice?.let { device ->
             device.setPairingType(DeviceService.PairingType.PIN_CODE)
             device.connect()
         } ?: run {
@@ -98,7 +106,6 @@ object DeviceListener : ConnectableDeviceListener {
             channel?.invokeMethod("sendPairingKey", mapOf("status" to "failed", "error" to e.message))
         }
     }
-
 
     override fun onDeviceReady(device: ConnectableDevice?) {
         WebOSManager.initialize(device)
