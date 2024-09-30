@@ -7,9 +7,13 @@ class PermissionCheck {
 
   // 필요한 권한들을 리스트로 관리
   final List<Permission> permissions = [
-    Permission.camera,
-    Permission.microphone,
     Permission.mediaLibrary,
+    Permission.location,
+    Permission.accessMediaLocation,
+    Permission.bluetoothConnect,
+    Permission.bluetoothAdvertise,
+    Permission.bluetoothScan,
+    Permission.bluetooth,
   ];
 
   // 전체 권한 요청 및 상태 확인 함수
