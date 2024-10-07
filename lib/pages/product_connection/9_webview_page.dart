@@ -307,10 +307,13 @@ class _WebViewPageState extends State<WebViewPage> {
       return true;
     } else {
       final currentUrl = await controller.currentUrl();
-      if (currentUrl ==
-              'https://amuzcorp-pet-care-zone-webview.vercel.app/home' ||
-          currentUrl ==
-              "https://amuzcorp-pet-care-zone-webview.vercel.app/profile/register") {
+      if (currentUrl == null) {
+        return true;
+      }
+      if (currentUrl.contains('/home') ||
+          currentUrl.contains('/profile/register') ||
+          currentUrl.contains('/timeline') ||
+          currentUrl.contains('/ai-health')) {
         if (mounted) {
           Navigator.pushReplacement(
             context,
