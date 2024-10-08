@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
@@ -13,6 +14,7 @@ import 'package:petcarezone/services/user_service.dart';
 import 'package:petcarezone/utils/permissionCheck.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../utils/logger.dart';
 
@@ -55,6 +57,23 @@ class _WebViewPageState extends State<WebViewPage> {
         request.grant();
       },
     );
+    final platformController = controller.platform;
+
+    if (platformController is AndroidWebViewController) {
+      platformController.setGeolocationPermissionsPromptCallbacks(
+        onShowPrompt: (request) async {
+          // request location permission
+          final locationPermissionStatus =
+              await Permission.locationWhenInUse.request();
+
+          // return the response
+          return GeolocationPermissionsResponse(
+            allow: locationPermissionStatus == PermissionStatus.granted,
+            retain: false,
+          );
+        },
+      );
+    }
   }
 
   Future userInfoInit() async {
