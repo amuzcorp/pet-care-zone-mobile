@@ -1,17 +1,15 @@
-import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/pages/product_connection/5_pincode_connection_page.dart';
 import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
-import '../../constants/color_constants.dart';
 import '../../services/connect_sdk_service.dart';
-import '../../utils/logger.dart';
 
 class PincodeCheckPage extends StatefulWidget {
   const PincodeCheckPage({
@@ -25,6 +23,7 @@ class PincodeCheckPage extends StatefulWidget {
 class _PincodeCheckPageState extends State<PincodeCheckPage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
+  final LunaService lunaService = LunaService();
 
   Future webOSInit() async {
     await deviceService.deviceInitialize();
@@ -34,6 +33,8 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
     try {
       final deviceInfo = await deviceService.getWebOSDeviceInfo();
       if (deviceInfo != null) {
+        // await lunaService.scanWifi();
+        // await lunaService.checkWifiStatus();
         await connectSdkService.requestParingKey(deviceInfo);
       } else {
         print('No device information available');
@@ -58,7 +59,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       topHeight: 70,
       contentWidget: Column(
         children: [
-          guideImageWidget(imagePath: ImageConstants.productConnectionGuide2),
+          guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
           // StreamBuilder<String>(
           //   stream: connectSdkService.logStream,
           //   builder: (context, logSnapshot) {

@@ -19,12 +19,12 @@ class _RegisterPageState extends State<RegisterPage> {
   final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final LunaService lunaService = LunaService();
+
   Future navigate() async {
-    await lunaService.startProvision();
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      return Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterProcessPage()));
-    }
+    await Future.delayed(const Duration(seconds: 3));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RegisterProcessPage()));
+    });
   }
 
   @override
@@ -44,10 +44,11 @@ class _RegisterPageState extends State<RegisterPage> {
             }
 
             navigate();
+
             return BasicPage(
               showAppBar: true,
               description: "Pet Care Zone 1m 이내에서\n기다려주세요. 가까울 수록 연결이\n잘 돼요.",
-              contentWidget: guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
+              contentWidget: guideImageWidget(imagePath: ImageConstants.productConnectionGuide6),
             );
           default:
             return const Center(child: CircularProgressIndicator());

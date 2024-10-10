@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/utils/logger.dart';
@@ -23,99 +24,45 @@ class DeviceService {
     connectSdkService.requestParingKey(webOSDeviceInfo!);
   }
 
-  // Future<void> saveBleInfo(Map<String, dynamic> ble) async {
-  //   final prefs = await SharedPreferences.getInstance();
-  //
-  //   Map<String, dynamic> modifiedBle = {
-  //     'remoteId': ble['remoteId']?.toString() ?? '',
-  //     'platformName': ble['platformName'] ?? 'Unknown',
-  //     'services': ble['services'] ?? [],
-  //     'scanResult': {
-  //       'device': {
-  //         'remoteId': ble['scanResult']?.device?.remoteId?.toString() ?? '',
-  //         'platformName': ble['scanResult']?.device?.platformName ?? 'Unknown',
-  //         'services': ble['scanResult']?.device?.servicesList ?? [],
-  //
-  //       },
-  //       'advertisementData': {
-  //         'advName': ble['scanResult']?.advertisementData?.advName ?? 'Unknown',
-  //         'txPowerLevel': ble['scanResult']?.advertisementData?.txPowerLevel ?? 0,
-  //         'appearance': ble['scanResult']?.advertisementData?.appearance ?? 0,
-  //         'connectable': ble['scanResult']?.advertisementData?.connectable ?? false,
-  //         'manufacturerData': ble['scanResult']?.advertisementData?.manufacturerData?.map((key, value) =>
-  //             MapEntry(key.toString(), value)) ?? {},
-  //         'serviceData': ble['scanResult']?.advertisementData?.serviceData?.map((key, value) =>
-  //             MapEntry(key.toString(), value)) ?? {},
-  //         'serviceUuids': ble['scanResult']?.advertisementData?.serviceUuids
-  //             ?.map((uuid) => uuid.toString())
-  //             .toList() ?? [],
-  //       },
-  //       'rssi': ble['scanResult']?.rssi ?? 0,
-  //       'timeStamp': ble['scanResult']?.timeStamp?.toString() ?? '',
-  //     }
-  //   };
-  //
-  //   String bleJson = jsonEncode(modifiedBle);
-  //   await prefs.setString('ble_info', bleJson);
-  // }
-
-  Future<void> saveWebOSDeviceInfo(Map<String, dynamic> device) async {
+  Future<void> saveBleInfo(BluetoothDevice ble) async {
     final prefs = await SharedPreferences.getInstance();
-
-    // WebOS Device 데이터를 변환
-    Map<String, dynamic> modifiedDevice = {
-      'id': device['id'] ?? '',
-      'lastKnownIPAddress': device['lastKnownIPAddress'] ?? '',
-      'friendlyName': device['friendlyName'] ?? 'Unknown',
-      'modelName': device['modelName'] ?? 'Unknown',
-      'modelNumber': device['modelNumber'] ?? 'Unknown',
-      'lastConnected': device['lastConnected'] ?? 0,
-      'lastDetection': device['lastDetection'] ?? 0,
-      'services': device['services']?.map((key, value) => MapEntry(key.toString(), value)) ?? {},
+    Map<String, dynamic> modifiedBle = {
+      'scanResult': {
+        'device': {
+          'remoteId': ble?.remoteId?.toString() ?? '',
+          'platformName': ble?.platformName.toString() ?? 'Unknown',
+          'services': ble?.servicesList.toString() ?? [],
+        },
+      }
     };
 
-    // BLE 데이터가 있는 경우 변환
-    // if (device['bleData'] != null) {
-    //   Map<String, dynamic> bleData = {
-    //     'remoteId': device['bleData']['remoteId']?.toString() ?? '',
-    //     'platformName': device['bleData']['platformName'] ?? 'Unknown',
-    //     'services': device['bleData']['services'] ?? [],
-    //     'scanResult': {
-    //       'device': {
-    //         'remoteId': device['bleData']['scanResult']?.device?.remoteId?.toString() ?? '',
-    //         'platformName': device['bleData']['scanResult']?.device?.platformName ?? 'Unknown',
-    //         'services': device['bleData']['scanResult']?.device?.servicesList ?? [],
-    //       },
-    //       'advertisementData': {
-    //         'advName': device['bleData']['scanResult']?.advertisementData?.advName ?? 'Unknown',
-    //         'txPowerLevel': device['bleData']['scanResult']?.advertisementData?.txPowerLevel ?? 0,
-    //         'appearance': device['bleData']['scanResult']?.advertisementData?.appearance ?? 0,
-    //         'connectable': device['bleData']['scanResult']?.advertisementData?.connectable ?? false,
-    //         'manufacturerData': device['bleData']['scanResult']?.advertisementData?.manufacturerData?.map((key, value) =>
-    //             MapEntry(key.toString(), value)) ?? {},
-    //         'serviceData': device['bleData']['scanResult']?.advertisementData?.serviceData?.map((key, value) =>
-    //             MapEntry(key.toString(), value)) ?? {},
-    //         'serviceUuids': device['bleData']['scanResult']?.advertisementData?.serviceUuids
-    //             ?.map((uuid) => uuid.toString())
-    //             .toList() ?? [],
-    //       },
-    //       'rssi': device['bleData']['scanResult']?.rssi ?? 0,
-    //       'timeStamp': device['bleData']['scanResult']?.timeStamp?.toString() ?? '',
-    //     },
-    //   };
-    //
-    //   modifiedDevice['bleData'] = bleData;
-    // }
+    String bleJson = jsonEncode(modifiedBle);
+    await prefs.setString('ble_info', bleJson);
+  }
 
-    // JSON으로 변환 후 저장
+
+
+  Future<void> saveWebOSDeviceInfo(Map<String, dynamic> device) async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // WebOS Device 데이터를 변환
+      Map<String, dynamic> modifiedDevice = {
+        'id': device['id'] ?? '',
+        'lastKnownIPAddress': device['lastKnownIPAddress'] ?? '',
+        'friendlyName': device['friendlyName'] ?? 'Unknown',
+        'modelName': device['modelName'] ?? 'Unknown',
+        'modelNumber': device['modelNumber'] ?? 'Unknown',
+        'lastConnected': device['lastConnected'] ?? 0,
+        'lastDetection': device['lastDetection'] ?? 0,
+        'services': device['services']?.map((key, value) => MapEntry(key.toString(), value)) ?? {},
+      };
       String deviceJson = jsonEncode(modifiedDevice);
       await prefs.setString('webos_device_info', deviceJson);
       print('WebOS device info saved: $modifiedDevice');
     } catch (e) {
       logD.e('Error saving device: $e');
     }
-
   }
 
   Future<Map<String, dynamic>> getWebOSDeviceInfo() async {
@@ -134,6 +81,21 @@ class DeviceService {
     return {};
   }
 
+  Future<Map<String, dynamic>> getBleInfo() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? deviceJson = prefs.getString('ble_info');
+      if (deviceJson != null && deviceJson.isNotEmpty) {
+        Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
+        return deviceMap;
+      } else {
+        print('No ble info found in SharedPreferences');
+      }
+    } catch (e) {
+      logD.e('Error fetching device info: $e');
+    }
+    return {};
+  }
 
   Future<String?> getDeviceIp() async {
     try {

@@ -1,11 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
-import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:wifi_iot/wifi_iot.dart';
@@ -33,17 +34,32 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final TextEditingController passwordController = TextEditingController();
   final LayerLink layerLink = LayerLink();
 
+  StreamController<String> messageController = StreamController<String>();
+
+  Uint8List? macAddressWithSeparatorArray;
+  Uint8List? macAddressArray;
+
   String currentWifi = "";
   String selectedWifi = "";
+  String selectedSecurityType = "";
   String password = "";
   String errorText = "";
   String sshHost = "";
+  bool isLoading = false;
   BluetoothDevice connectedDevice = FlutterBluePlus.connectedDevices.first;
   BluetoothCharacteristic? targetCharacteristic;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    getCharacteristics();
+  }
+
+  @override
   void initState() {
     super.initState();
+    wifiService.initialize();
+    passwordController.clear();
     print('connectedDevice $connectedDevice');
   }
 
@@ -51,28 +67,48 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   void dispose() {
     wifiService.dispose();
     passwordController.dispose();
+    messageController.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    wifiService.initialize();
-    getCharacteristics();
     return BasicPage(
       showAppBar: true,
       description: "Pet Care Zone에 연결할\nWi-Fi 네트워크를 아래 화면에서\n선택해주세요.",
-      topHeight: 70,
+      topHeight: 50,
       contentWidget: Column(
         children: [
+          Row(
+            children: [
+              FontConstants.inputLabelText('Wi-Fi 네트워크'),
+            ],
+          ),
+          boxH(10),
           widgetWifiDropdown(),
           boxH(20),
+          Row(
+            children: [
+              FontConstants.inputLabelText('비밀번호'),
+            ],
+          ),
+          boxH(10),
           widgetPasswordField(),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(errorText, style: TextStyle(color: ColorConstants.red)),
+                StreamBuilder<String>(
+                  stream: messageController.stream,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return Text(snapshot.data!, style: TextStyle(color: ColorConstants.red));
+                    }
+                    return Container();
+                  },
+                ),
+                // Text(errorText, style: TextStyle(color: ColorConstants.red)),
               ],
             ),
           ),
@@ -91,9 +127,10 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       stream: wifiService.wifiStream,
       builder: (context, snapshot) {
         List<Map<String, String>> wifiInfos = snapshot.data ?? [];
-
+        print('wifiInfos $wifiInfos');
         if (wifiInfos.isNotEmpty) {
           final firstSsid = wifiInfos[0]['SSID'] ?? "";
+          final firstSecurityType = wifiInfos[0]['securityType']?.toLowerCase().contains("");
 
           if (selectedWifi.isEmpty) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -150,7 +187,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     return TextFormField(
       textAlign: TextAlign.start,
       decoration: InputDecoration(
-        labelText: "비밀번호",
         filled: true,
         fillColor: ColorConstants.white,
         enabledBorder: OutlineInputBorder(
@@ -186,15 +222,12 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   }
 
   Future getCharacteristics() async {
-    // 연결이 되어있다면 디바이스를 먼저 disconnect 후 reconnect
     if (connectedDevice != null) {
       await Future.delayed(const Duration(seconds: 2)); // 서비스 검색 전 대기
 
       List<BluetoothService> services = await connectedDevice.discoverServices();
       for (BluetoothService service in services) {
         for (BluetoothCharacteristic characteristic in service.characteristics) {
-          print('characteristic.uuid : ${characteristic.uuid} / properties : ${characteristic.properties}');
-
           /// 쓰기 가능한 characteristic을 찾는다
           if (characteristic.properties.write) {
             targetCharacteristic = characteristic;
@@ -211,134 +244,181 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     }
   }
 
-  // void checkCCCD(BluetoothCharacteristic characteristic) async {
-  //   for (BluetoothDescriptor descriptor in characteristic.descriptors) {
-  //     print('Descriptor UUID: ${descriptor.uuid}');
-  //     if (descriptor.uuid.toString() == '2902') {
-  //       print('CCCD found!');
-  //     }
-  //   }
-  // }
-
   Future<void> connectToWifi() async {
-    await getCurrentSSID(); // 현재 Wi-Fi 확인
-    print('현재 Wi-Fi: $currentWifi');
+    await getCurrentSSID();
 
-    // 선택한 Wi-Fi와 현재 연결된 Wi-Fi가 다른 경우 오류 처리
+    if (!mounted) return;
+
     if (currentWifi != selectedWifi) {
-      setState(() {
-        errorText = '*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi';
-      });
+      messageController.add('*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi');
       return;
     }
 
-    // 비밀번호가 입력되지 않은 경우 오류 처리
     if (password.isEmpty) {
-      setState(() {
-        errorText = "*Wi-Fi 비밀번호를 입력해주세요.";
-      });
+      messageController.add('*Wi-Fi 비밀번호를 입력해주세요.');
       return;
     }
 
-    setState(() {
-      errorText = "";
-    });
-
-    // BLE 연결 상태 확인 후 데이터 전송
     if (connectedDevice != null) {
-      print('!!!$selectedWifi $password');
-      // 1. BLE 연결
+      await setRegistration();
       await sendWifiCredentialsToBLE(selectedWifi, password);
-      // 2. PIN 코드 페이지로 이동
       navigateToPincodeCheckPage();
     } else {
-      setState(() {
-        errorText = '* BLE 연결을 확인해주세요.';
-      });
+      messageController.add('* BLE 연결을 확인해주세요.');
     }
+  }
+
+  // Future<void> setRegistration() async {
+  //   String macAddressString = targetCharacteristic!.remoteId.toString();
+  //   Uint8List macAddressArray = stringToMacAddressArray(macAddressString);
+  //   Int8List result = Int8List(macAddressArray.length + 1);
+  //   result[0] = 0x00;
+  //   result.setRange(1, result.length, macAddressArray);
+  //
+  //   print("result with 0x00 at the front: ${result}");
+  //   print("result in Hex: ${result.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+  //
+  //   await targetCharacteristic!.write(result);
+  // }
+
+  Future<void> setRegistration() async {
+    await generateRandomMacAddressWithSeparator();
+    Uint8List dataArray = Uint8List.fromList(macAddressArray ?? Uint8List(0)); // Null일 경우 빈 배열로 대체
+
+    Uint8List result = Uint8List(dataArray.length + 1); // Create a new array with extra space for 0x00
+    result[0] = 0x00; // Add 0x00 : setRegistration id
+    result.setRange(1, result.length, dataArray); // Copy the original result into the new array
+
+    print("result with 0x00 at the front: ${result}");
+    print("result in Hex: [${result.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}]");
+
+    // Here you can send 'result' to your BLE characteristic
+    await targetCharacteristic!.write(result);
   }
 
   Future<void> sendWifiCredentialsToBLE(String ssid, String password) async {
-    print('connectedDevice $connectedDevice');
-    print('password $password');
     if (targetCharacteristic != null) {
-      print('targetCharacteristic $targetCharacteristic');
       try {
         /// 연결된 BLE 기기에 SSID + PW 전송
-        SecurityType securityType = SecurityType.PSK;
+        String securityType = "PSK";
         String isHidden = "FALSE";
 
-        String dataToSend = '$ssid\u0000$password\u0000${securityType.value}\u0000$isHidden\u0000';
-        print('ssid $ssid');
-        print('pass $password');
-        print('dataToSend $dataToSend');
+        String dataToSend = '$ssid\u0000\u0000$password\u0000\u0000$securityType\u0000\u0000$isHidden';
         await writeCharacteristic(dataToSend);
       } catch (e) {
-        setState(() {
-          errorText = '* BLE 기기와 통신 오류 발생';
-        });
+        messageController.add('* BLE 기기와 통신 오류 발생');
       }
     } else {
-      setState(() {
-        errorText = '* 지원 불가 BLE입니다.';
-      });
+      messageController.add('* 지원 불가 BLE입니다.');
     }
   }
 
-  Future writeCharacteristic(String value) async {
-    print('targetCharacteristic $targetCharacteristic');
-
-    Uint8List key = Uint8List(16);
-    Uint8List macAddress = Uint8List.fromList(connectedDevice!.remoteId.toString().codeUnits);
-    await makeKey(key, key.length, macAddress);
-
-    Uint8List original = Uint8List.fromList(utf8.encode(value));
-    Uint8List result = Uint8List(original.length);
-    encryptXOR(result, original, original.length, key);
-
-    // Key, Original, Result 확인
-    print('MAC Address: $macAddress');
-    print('Generated Key: $key');
-    print('Original Data: $original');
-    print('Encrypted Result: $result');
-
-    try {
-      // 데이터를 Uint8List로 변환 후 특성에 작성
-      await targetCharacteristic!.write(result);
-      targetCharacteristic!.lastValueStream.listen((value) {
-        print("listened Data: $value");
-      });
-      await Future.delayed(const Duration(seconds: 3));  // 딜레이 추가
-      print("Write successful");
-
-      // await targetCharacteristic!.setNotifyValue(true);
-      // print('notify good!!?');
-      // targetCharacteristic!.lastValueStream.listen((value) {
-      //   print('listen value : $value');
-      // });
-
-    } catch (e) {
-      print("Write failed: $e");
-    }
-  }
-
-  Future makeKey(Uint8List key, int keyLength, Uint8List macAddress) async {
+  void makeKey(Uint8List key, int macLength, Uint8List uuid) {
+    print("UUID length: ${uuid.length}");
     int keyValue = 0;
-    if ((macAddress[1] & 0x01) == 0x01) {
+    if ((uuid[1] & 0x01) == 0x01) {
       keyValue = 1;
     }
 
-    int macIndex = 0;
-    for (int i = 0; i < keyLength; i++) {
+    int uuidIndex = 0;
+
+    for (int i = 0; i < macLength; i++) {
       if (i % 2 == keyValue) {
-        key[i] = key[i] ^ macAddress[(macIndex++) % 2];
-        print("qwdwqewqe ${key[i]}");
+        key[i] = key[i] ^ uuid[(++uuidIndex) % 2];
       }
     }
   }
 
-  int encryptXOR(Uint8List result, Uint8List original, int originalLength, Uint8List key) {
-    if (original == null || key == null || originalLength <= 0) {
+  Future<void> writeCharacteristic(String value) async {
+    final String uuidString = targetCharacteristic!.uuid.toString();
+    final Uint8List uuidArray = Uint8List(2);
+    uuidArray[0] = int.parse(uuidString.substring(0, 2), radix: 16);
+    uuidArray[1] = int.parse(uuidString.substring(2, 4), radix: 16);
+
+    Uint8List keyArray = Uint8List.fromList(macAddressWithSeparatorArray ?? Uint8List(0)); // Null일 경우 빈 배열로 대체
+    int macLength = keyArray.length;
+
+    print("Key before makeKey: ${keyArray}");
+    print("Key before makeKey in Hex: [${keyArray.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}]");
+    print("Length of keyArray: ${keyArray.length}");
+
+    // Print the UUID
+    print("UUID: ${uuidArray}");
+
+    makeKey(keyArray, macLength, uuidArray); // Call makeKey with the string key
+
+    print("Key after makeKey: $keyArray");
+    print("Key after makeKey in Hex: ${keyArray.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+
+    Uint8List original = stringToMacAddressArray(value); // Use global macAddressString
+
+    print("original: ${original}");
+    print("original in Hex: ${keyArray.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+
+    Int8List result = Int8List(original.length);
+
+    encryptXOR(result, original, original.length, keyArray);
+
+    // Adding 0x0A(action id for Wifi Sync Info) byte at the front of result
+    Int8List finalResult = Int8List(result.length + 1); // Create a new array with extra space for 0x0A
+    finalResult[0] = 0x0A; // Add 0x0A at the front
+    finalResult.setRange(1, finalResult.length, result); // Copy the original result into the new array
+
+    print("Final result with 0x0A at the front: ${finalResult}");
+    print("Final result in Hex: ${finalResult.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+
+    // Here you can send 'result' to your BLE characteristic
+    await targetCharacteristic!.write(result);
+  }
+
+  // Future writeCharacteristic(String value) async {
+  //   final String uuidString = targetCharacteristic!.uuid.toString();
+  //   final Uint8List uuidArray = Uint8List(2);
+  //   uuidArray[0] = int.parse(uuidString.substring(0, 2), radix: 16);
+  //   uuidArray[1] = int.parse(uuidString.substring(2, 4), radix: 16);
+  //
+  //   final String macAddress = targetCharacteristic!.remoteId.toString();
+  //   final macAddressArray = stringToMacAddressArray(macAddress);
+  //
+  //
+  //   /// MAC Address 길이
+  //   final int macLength = macAddress.length;
+  //
+  //   print('key $macLength');
+  //   print('Key before makeKey: $macAddressArray');
+  //   print("Key before makeKey in Hex: ${macAddressArray.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+  //   print("Length of macAddressArray: ${macAddressArray.length}");
+  //
+  //   makeKey(macAddressArray, macLength, uuidArray);
+  //
+  //   print("Key after makeKey: $macAddressArray"); // Display the key string before modification
+  //   print("Key after makeKey in Hex: ${macAddressArray.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+  //
+  //   Uint8List original = stringToMacAddressArray(value);
+  //
+  //   // List<int> result = Uint8List(original.length);
+  //   Int8List result = Int8List(original.length);
+  //   encryptXOR(result, original, original.length, macAddressArray);
+  //
+  //   Int8List finalResult = Int8List(result.length + 1);
+  //   finalResult[0] = 0x0A;
+  //   finalResult.setRange(1, finalResult.length, result);
+  //   print("result: ${result}");
+  //   print("Final result with 0x0A at the front: ${finalResult}");
+  //   print("Final result in Hex: ${finalResult.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
+  //
+  //
+  //   await targetCharacteristic!.write(finalResult);
+  // }
+
+  Uint8List stringToMacAddressArray(String input) {
+    List<int> byteList = input.codeUnits;
+
+    return Uint8List.fromList(byteList);
+  }
+
+  int encryptXOR(Int8List result, Uint8List original, int originalLength, Uint8List key) {
+    if (original.isEmpty || key.isEmpty || originalLength <= 0) {
       return -1;
     }
 
@@ -348,6 +428,27 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
     return 1;
   }
+
+  Future generateRandomMacAddressWithSeparator() async {
+    final rand = Random();
+    List<int> macAddressBytes = [];
+    List<int> macAddressWithSeparatorArrayBytes = [];
+
+    for (int i = 0; i < 6; i++) {
+      int value = rand.nextInt(256); // 0-255 random value
+      macAddressBytes.add(value);    // Add byte value
+      macAddressWithSeparatorArrayBytes.add(value);    // Add byte value
+      if (i < 5) {
+        macAddressWithSeparatorArrayBytes.add(0x3A);   // Add hex value for ':' (0x3A)
+      }
+    }
+    macAddressArray = Uint8List.fromList(macAddressBytes);
+    macAddressWithSeparatorArray = Uint8List.fromList(macAddressWithSeparatorArrayBytes);
+    print('macAddressArray $macAddressArray');
+    print('macAddressWithSeparatorArray $macAddressWithSeparatorArray');
+  }
+
+
 
   void handleReceivedData(String data) {
     print('data $data');

@@ -72,6 +72,15 @@ class LunaService {
     }
   }
 
+  Future startProvision2() async {
+    const String uri = ApiUrls.lunaProvisionUrl2;
+    try {
+      webOSRequest(uri, {});
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
   Future lunaGetProfileList() async {
     const String uri = ApiUrls.lunaGetProfileList;
     try {

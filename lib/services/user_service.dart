@@ -2,10 +2,11 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
-import 'package:petcarezone/pages/product_connection/1_power_check_page.dart';
+import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/data/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../pages/product_connection/1-2_power_check_page.dart';
 import '../utils/logger.dart';
 
 class UserService {
@@ -16,6 +17,7 @@ class UserService {
 
   Future<Widget> initializeApp() async {
     if (await isTokenValid()) {
+      // return const InitialDeviceHomePage();
       return const PowerCheckPage();
     } else {
       return const LoginPage();
@@ -48,6 +50,7 @@ class UserService {
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
+              // builder: (context) => const InitialDeviceHomePage(),
               builder: (context) => const PowerCheckPage(),
             ),
           );
@@ -71,16 +74,16 @@ class UserService {
   Future<bool> isTokenValid() async {
     final prefs = await SharedPreferences.getInstance();
     final tokenTime = prefs.getInt('tokenTime');
-    // if (tokenTime != null) {
-    //   final currentTime = DateTime.now().millisecondsSinceEpoch;
-    //   final tokenAge = currentTime - tokenTime;
-    //   // if (tokenAge > 0) {
-    //   //   await prefs.remove('accessToken');
-    //   //   await prefs.remove('user');
-    //   //   return false;
-    //   // }
-    //   return true;
-    // }
+    if (tokenTime != null) {
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final tokenAge = currentTime - tokenTime;
+      // if (tokenAge > 0) {
+      //   await prefs.remove('accessToken');
+      //   await prefs.remove('user');
+      //   return false;
+      // }
+      return true;
+    }
     return false;
   }
 

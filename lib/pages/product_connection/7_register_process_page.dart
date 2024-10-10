@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/luna_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../utils/logger.dart';
@@ -19,6 +20,7 @@ class RegisterProcessPage extends StatefulWidget {
 
 class _RegisterProcessPageState extends State<RegisterProcessPage> {
   DeviceService deviceService = DeviceService();
+  LunaService lunaService = LunaService();
   double progressValue = 0;
 
   Future handleDeviceRegistrationAndProvision() async {
@@ -30,6 +32,14 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
         print('No device info available.');
         return;
       }
+      await Future.delayed(const Duration(seconds: 3));
+
+      await lunaService.startProvision();
+
+      await Future.delayed(const Duration(seconds: 3));
+
+      await lunaService.startProvision2();
+
       // final deviceId = device.deviceId;
       // await prefs.setString('deviceId', deviceId!);
       //
@@ -40,9 +50,9 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
       // logD.i('Device provision result : $provisionResult');
 
       // if (provisionResult?['message'] == 'Success' || registerResult?['message'].contains('already')) {
-      //   await Future.delayed(const Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 5));
       if (mounted) {
-        return navigator(context, () => const RegisterCompletePage());
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterCompletePage()));
         // }
       }
     } catch (e) {
@@ -81,10 +91,10 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
     return BasicPage(
       showAppBar: true,
       topHeight: 70,
-      description: "추가가 끝날 때까지 Pet Care\nZone과 거리를 가깝게 유지해주세요.",
+      description: "추가가 끝날 때까지 Pet Care Zone\n과 거리를 가깝게 유지해주세요.",
       contentWidget: Column(
         children: [
-          guideImageWidget(imagePath: ImageConstants.productConnectionGuide5),
+          guideImageWidget(imagePath: ImageConstants.productConnectionGuide7),
           const SizedBox(height: 20),
           // Progress bar animated over 3 seconds
           TweenAnimationBuilder<double>(

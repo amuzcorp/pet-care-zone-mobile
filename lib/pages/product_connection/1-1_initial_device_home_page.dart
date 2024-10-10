@@ -1,6 +1,7 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
+import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,14 +14,14 @@ import '../../utils/logger.dart';
 import '../../widgets/page/basic_page.dart';
 import '9_webview_page.dart';
 
-class PowerCheckPage extends StatefulWidget {
-  const PowerCheckPage({super.key});
+class InitialDeviceHomePage extends StatefulWidget {
+  const InitialDeviceHomePage({super.key});
 
   @override
-  State<PowerCheckPage> createState() => _PowerCheckPageState();
+  State<InitialDeviceHomePage> createState() => _InitialDeviceHomePageState();
 }
 
-class _PowerCheckPageState extends State<PowerCheckPage> {
+class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final UserService userService = UserService();
   Widget destinationPage = const DeviceListPage();
 
@@ -29,11 +30,8 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
 
     if (userInfo != null) {
       String userId = userInfo.userId;
-      int petId =
-          userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
-      String? deviceId = userInfo.deviceList.isNotEmpty
-          ? userInfo.deviceList.first.deviceId
-          : "";
+      int petId = userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
+      String? deviceId = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceId : "";
 
       final prefs = await SharedPreferences.getInstance();
 
@@ -46,7 +44,9 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
       if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
         setState(() {
           destinationPage = WebViewPage(
-              uri: Uri.parse(ApiUrls.webViewUrl), backPage: PowerCheckPage());
+            uri: Uri.parse(ApiUrls.webViewUrl),
+            backPage: const InitialDeviceHomePage(),
+          );
         });
       }
     } else {
@@ -64,25 +64,29 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: false,
-      leadingHeight: 60,
-      topHeight: 70,
-      description: 'Pet Care Zone의 전원 코드를\n연결해 전원을 켜주세요.',
-      contentWidget: Column(
-        children: [
-          guideImageWidget(imagePath: ImageConstants.productConnectionGuide0)
-        ],
+      backgroundImage: Image.asset(
+        ImageConstants.productConnectionGuide1,
+        fit: BoxFit.cover,
       ),
-      bottomButton: BasicButton(
-        text: '전원을 켰어요',
-        onPressed: () => {
-          if (mounted)
-            {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => destinationPage),
-              )
-            }
-        },
+      contentWidget: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                '홈',
+                style: TextStyle(
+                  fontSize: FontConstants.descriptionTextSize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          boxH(10),
+          BasicButton(text: "aa", height: 100, width: 150,),
+
+        ],
       ),
     );
   }

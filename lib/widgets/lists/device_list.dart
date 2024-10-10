@@ -159,19 +159,11 @@ class _DeviceListState extends State<DeviceList> {
                     final device = devices[index];
                     return ListTile(
                       key: ValueKey(device['id']),
-                      leading: Image.asset(ImageConstants.productConnectionGuide1),
+                      leading: Image.asset(ImageConstants.productConnectionGuide3),
                       title: Text(device['platformName'] ?? 'Unknown Device'),
                       subtitle: Text("MAC: ${device['remoteId'] ?? 'Unknown'}"),
                       onTap: () async {
                         await saveDevicesAndNavigate(device);
-                        if (mounted) {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => const WifiConnectionPage()
-                              ),
-                          );
-                        }
                       },
                     );
                   },

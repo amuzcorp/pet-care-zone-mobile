@@ -13,11 +13,12 @@ class ApiUrls {
   static const String lunaGetProfileList = 'ssap://com.webos.service.wifi/getprofilelist';
 
   static const Map lunaWifiScan = {
-    'uri': 'luna://com.webos.service.petcareservice/mqtt',
+    'uri': 'ssap://com.webos.service.wifi/findnetworks',
     'payload': {"subscribe": true}
   };
 
   static const String lunaProvisionUrl = 'ssap://com.webos.service.petcareservice/mqtt/executeProvisioning';
+  static const String lunaProvisionUrl2 = 'luna://com.webos.service.petcareservice/mqtt/executeProvisioning';
 
   static Map<String, String> getLunaWifiConnectUrl(String wifi, String passKey) {
     return {

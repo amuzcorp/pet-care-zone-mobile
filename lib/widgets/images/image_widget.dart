@@ -13,7 +13,8 @@ Widget guideImageWidget({
         borderRadius: BorderRadius.circular(SizeConstants.borderSize),
       ),
       child: Image.asset(
-          imagePath!,
+        imagePath!,
+        height: height,
       )
   );
 }
