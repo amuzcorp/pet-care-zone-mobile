@@ -17,6 +17,8 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../utils/logger.dart';
+import '../../widgets/navigator/navigator.dart';
+import '1-2_power_check_page.dart';
 
 class WebViewPage extends StatefulWidget {
   const WebViewPage({super.key, required this.uri, required this.backPage});
@@ -29,8 +31,7 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> {
-  static const MethodChannel _channel =
-      MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late MqttServerClient client;
   late final WebViewController controller;
   late final PlatformWebViewControllerCreationParams params;
@@ -63,8 +64,7 @@ class _WebViewPageState extends State<WebViewPage> {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
           // request location permission
-          final locationPermissionStatus =
-              await Permission.locationWhenInUse.request();
+          final locationPermissionStatus = await Permission.locationWhenInUse.request();
 
           // return the response
           return GeolocationPermissionsResponse(
@@ -79,8 +79,7 @@ class _WebViewPageState extends State<WebViewPage> {
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i(
-        'Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId, deviceIp: $deviceIp');
+    logD.i('Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId, deviceIp: $deviceIp');
     await trackPetId();
   }
 
@@ -109,8 +108,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// 1. pet id check
   Future<void> trackPetId() async {
-    final petIdFromLocalStorage = await controller
-        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
     int localStoragePetId = int.tryParse(petIdStr) ?? 0;
 
@@ -188,8 +186,7 @@ class _WebViewPageState extends State<WebViewPage> {
     final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
     final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
 
-    logD.i(
-        'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+    logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
 
     client.subscribe(stateTopic, MqttQos.atLeastOnce);
     client.subscribe(eventTopic, MqttQos.atLeastOnce);
@@ -197,8 +194,7 @@ class _WebViewPageState extends State<WebViewPage> {
     client.updates.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
       for (dynamic message in messages) {
         final payload = message.payload as MqttPublishMessage;
-        final payloadMsg =
-            MqttUtilities.bytesToStringAsString(payload.payload.message!);
+        final payloadMsg = MqttUtilities.bytesToStringAsString(payload.payload.message!);
         final jsonPayload = jsonDecode(payloadMsg) as Map<String, dynamic>;
         if (message.topic == stateTopic) {
           _sendToWebView(jsonPayload, 'stateTopic');
@@ -217,26 +213,18 @@ class _WebViewPageState extends State<WebViewPage> {
     if (topic == 'eventTopic') {
       String jsonData = jsonEncode(data);
 
-      await controller.runJavaScript("""
-      localStorage.setItem('eventTopic', '$jsonData');
-    """);
+      await controller.runJavaScript("localStorage.setItem('eventTopic', '$jsonData');");
 
-      final result = await controller.runJavaScriptReturningResult("""
-      localStorage.getItem('eventTopic');
-    """);
+      final result = await controller.runJavaScriptReturningResult("localStorage.getItem('eventTopic');");
       print('event result $result');
     }
 
     if (topic == 'stateTopic') {
       String jsonData = jsonEncode(data);
 
-      await controller.runJavaScript("""
-      localStorage.setItem('stateTopic', '$jsonData');
-    """);
+      await controller.runJavaScript("localStorage.setItem('stateTopic', '$jsonData');");
 
-      final result = await controller.runJavaScriptReturningResult("""
-      localStorage.getItem('stateTopic');
-    """);
+      final result = await controller.runJavaScriptReturningResult("localStorage.getItem('stateTopic');");
       print('state result $result');
     }
   }
@@ -246,16 +234,11 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   Future getLocalStorageValues() async {
-    final accessToken = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('accessToken')");
-    final userId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('userId')");
-    final petId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('petId')");
-    final deviceId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('deviceId')");
-    logD.i(
-        'Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
+    final accessToken = await controller.runJavaScriptReturningResult("localStorage.getItem('accessToken')");
+    final userId = await controller.runJavaScriptReturningResult("localStorage.getItem('userId')");
+    final petId = await controller.runJavaScriptReturningResult("localStorage.getItem('petId')");
+    final deviceId = await controller.runJavaScriptReturningResult("localStorage.getItem('deviceId')");
+    logD.i('Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   Future<void> saveFile(String dataURL, String format) async {
@@ -274,8 +257,7 @@ class _WebViewPageState extends State<WebViewPage> {
         await folder.create(recursive: true);
       }
 
-      final filePath =
-          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -297,16 +279,23 @@ class _WebViewPageState extends State<WebViewPage> {
     if (message.message.startsWith('data:video/mp4')) {
       return saveFile(message.message, 'mp4');
     }
+    if (message.message == "deleteDevice") {
+      logD.i("Device info deleted. navigate to device register page.");
+      navigator(context, () => const PowerCheckPage());
+    }
+
     if (message.message == "backButtonClicked") {
       logD.i("Back button clicked in WebView");
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => widget.backPage),
-        );
-      }
+      backPageNavigator();
       return;
     }
+  }
+
+  backPageNavigator() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => widget.backPage), (route) => false,
+    );
   }
 
   @override
@@ -361,13 +350,6 @@ class _WebViewPageState extends State<WebViewPage> {
                   await userInfoInit();
                   await trackPetId();
                 },
-                // onPageFinished: (String url) {},
-                // onNavigationRequest: (NavigationRequest request) {
-                //   if (request.url.startsWith(ApiUrls.webViewUrl)) {
-                //     return NavigationDecision.prevent;
-                //   }
-                //   return NavigationDecision.navigate;
-                // },
               ),
             )
             ..addJavaScriptChannel(

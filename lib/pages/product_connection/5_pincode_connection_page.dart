@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
+import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
+import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/inputs/pincode_input.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
@@ -55,6 +57,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
       topHeight: 70,
       contentWidget: Column(
         children: [
+          guideImageWidget(imagePath: ImageConstants.productConnectionGuide5),
           PincodeInput(pincodeController: pincodeController),
           Expanded(
               child: Column(

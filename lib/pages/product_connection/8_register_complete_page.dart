@@ -98,7 +98,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
                     MaterialPageRoute(
                       builder: (context) => WebViewPage(
                         uri: Uri.parse(ApiUrls.webViewUrl),
-                        backPage: RegisterCompletePage(),
+                        backPage: const RegisterCompletePage(),
                       ),
                     ),
                   )

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
-import 'package:petcarezone/pages/product_connection/1_power_check_page.dart';
+import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
+import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/user_service.dart';
 import 'package:petcarezone/utils/permissionCheck.dart';
 
@@ -20,7 +21,6 @@ class MyAppState extends State<MyApp> {
   final UserService userService = UserService();
   final PermissionCheck permissionCheck = PermissionCheck();
   late Future<Widget> _initialPage;
-
 
   @override
   void initState() {
@@ -51,15 +51,6 @@ class MyAppState extends State<MyApp> {
           }
         },
       ),
-      onGenerateRoute: (settings) {
-        switch (settings.name) {
-          case '/PowerCheck':
-            return MaterialPageRoute(builder: (_) => const PowerCheckPage());
-          case '/login':
-          default:
-            return MaterialPageRoute(builder: (_) => const LoginPage());
-        }
-      },
     );
   }
 }

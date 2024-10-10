@@ -47,16 +47,23 @@ class WifiService {
     if (can == CanGetScannedResults.yes) {
       final accessPoints = await WiFiScan.instance.getScannedResults();
 
-      final Map<String, String> uniqueSsidMap = {};
+      final Map<String, Map<String, String>> uniqueSsidMap = {};
 
       for (final ap in accessPoints) {
         if (ap.ssid.isNotEmpty && ap.bssid.isNotEmpty) {
-          uniqueSsidMap[ap.ssid] = ap.bssid;
+          uniqueSsidMap[ap.ssid] = {
+            'BSSID': ap.bssid,
+            'securityType': ap.capabilities,
+          };
         }
       }
 
       final List<Map<String, String>> wifiList = uniqueSsidMap.entries.map((entry) {
-        return {'SSID': entry.key, 'BSSID': entry.value};
+        return {
+          'SSID': entry.key,
+          'BSSID': entry.value['BSSID']!,
+          'securityType': entry.value['securityType']!,
+        };
       }).toList();
 
       print('wifiList $wifiList');
