@@ -81,7 +81,7 @@ class _DeviceRegisterCardState extends State<DeviceRegisterCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Image.asset(
-              ImageConstants.productConnectionGuide6,
+              ImageConstants.productConnectionGuide7,
               height: 40,
             ),
             Row(

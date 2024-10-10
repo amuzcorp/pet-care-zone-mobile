@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
-import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 
 import '../../constants/image_constants.dart';
@@ -13,9 +12,12 @@ import '../../data/models/device_model.dart';
 import '../../services/device_service.dart';
 import '../../services/wifi_service.dart';
 import '../../utils/logger.dart';
+import '../indicator/indicator.dart';
 
 class DeviceList extends StatefulWidget {
-  const DeviceList({super.key});
+  final ValueChanged<bool>? onLoadingChanged;
+
+  const DeviceList({super.key, this.onLoadingChanged});
 
   @override
   _DeviceListState createState() => _DeviceListState();
@@ -24,7 +26,6 @@ class DeviceList extends StatefulWidget {
 class _DeviceListState extends State<DeviceList> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
-
   final WifiService wifiService = WifiService();
   StreamSubscription<List<Map<String, dynamic>>>? _deviceStreamSubscription;
 
@@ -36,35 +37,65 @@ class _DeviceListState extends State<DeviceList> {
       await device.connect();
       print('Device connected: $device');
     } catch (e) {
+      await device.connect();
       print("Error connecting to device: $e");
     }
   }
 
+
   Future<void> saveDevicesAndNavigate(Map<String, dynamic> device) async {
+    widget.onLoadingChanged?.call(true);
     /// BLE Data
-    final scanResult = device['bleData']['scanResult'];
-    final BluetoothDevice bluetoothDevice = scanResult.device;
+    final BluetoothDevice bluetoothDevice = device['scanResult'].device;
+
+    print('ble whole data $device');
     print('BLE device: $bluetoothDevice');
+    print('bluetoothDevice ${device['platformName']}');
 
     try {
       /// BLE 기기 연결
       await bleConnectToDevice(bluetoothDevice);
 
-      /// DeviceModel 생성
-      final deviceModel = DeviceModel(
-        serialNumber: device['modelNumber'],
-        deviceName: device['friendlyName'],
-        deviceIp: device['lastKnownIPAddress'],
-      );
+      /// BLE Data
+      await deviceService.saveBleInfo(bluetoothDevice);
 
-      /// WebOS Device 정보 저장
-      await deviceService.saveWebOSDeviceInfo(device);
+      if (connectSdkService.devices.isNotEmpty) {
+        print('connectSdkService.devices ${connectSdkService.devices}');
+        final webOSDevice = connectSdkService.devices.firstWhere(
+              (webOSDevice) => webOSDevice['friendlyName'].trim() == device['platformName'].trim(),
+        );
 
-      /// Device 정보 저장
-      await deviceService?.saveDeviceInfo(deviceModel);
+        if (webOSDevice.isNotEmpty) {
+          print('webOSDevice $webOSDevice');
+          /// DeviceModel 생성
+          final deviceModel = DeviceModel(
+            serialNumber: webOSDevice['modelNumber'],
+            deviceName: webOSDevice['friendlyName'],
+            deviceIp: webOSDevice['lastKnownIPAddress'],
+          );
+
+          /// webOS Whole Data
+          await deviceService.saveWebOSDeviceInfo(webOSDevice);
+
+          /// webOS necessary Data
+          await deviceService?.saveDeviceInfo(deviceModel);
+        }
+      }
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const WifiConnectionPage(),
+          ),
+        );
+      }
+
     } catch (e) {
       print('Error during saveDevicesAndNavigate: $e');
       rethrow;
+    } finally {
+      widget.onLoadingChanged?.call(false);
     }
   }
 
@@ -75,12 +106,14 @@ class _DeviceListState extends State<DeviceList> {
     connectSdkService.startScan();
     connectSdkService.setupListener();
     _deviceStreamSubscription = connectSdkService.deviceStream.listen((data) {
+      if(mounted) {
+        setState(() {});
+      }
     });
   }
 
   @override
   void dispose() {
-    _deviceStreamSubscription?.cancel();
     connectSdkService.stopScan();
     super.dispose();
   }
@@ -90,7 +123,7 @@ class _DeviceListState extends State<DeviceList> {
     return Flexible(
       fit: FlexFit.loose,
       child: StreamBuilder<List<Map<String, dynamic>>>(
-        stream: connectSdkService.deviceStream,
+        stream: connectSdkService.bleStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -102,11 +135,10 @@ class _DeviceListState extends State<DeviceList> {
           }
 
           if (!snapshot.hasData || snapshot.data == null || snapshot.data!.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: GradientCircularLoader());
           }
 
-          final devices = snapshot.data!.where((device) => device['bleData'] != null).toList();
-          print('Devices with BLE data: ${devices.length}');
+            final devices = snapshot.data!.toList();
 
           final maxContainerHeight = MediaQuery.of(context).size.height - 20.0;
           final containerHeight = (devices.length * itemHeight).clamp(itemHeight, maxContainerHeight);
@@ -128,11 +160,10 @@ class _DeviceListState extends State<DeviceList> {
                     return ListTile(
                       key: ValueKey(device['id']),
                       leading: Image.asset(ImageConstants.productConnectionGuide1),
-                      title: Text(device['friendlyName'] ?? 'Unknown Device'),
-                      subtitle: Text("MAC: ${device['bleData']?['remoteId'] ?? 'Unknown'}"),
+                      title: Text(device['platformName'] ?? 'Unknown Device'),
+                      subtitle: Text("MAC: ${device['remoteId'] ?? 'Unknown'}"),
                       onTap: () async {
                         await saveDevicesAndNavigate(device);
-                        connectSdkService.bleScanTimer?.cancel();
                         if (mounted) {
                           Navigator.push(
                               context,
@@ -154,7 +185,7 @@ class _DeviceListState extends State<DeviceList> {
               ),
             );
           }
-          return const Center(child: CircularProgressIndicator());
+          return const Center(child: GradientCircularLoader());
         },
       )
     );
