@@ -40,25 +40,23 @@ class DeviceService {
     await prefs.setString('ble_info', bleJson);
   }
 
-
-
   Future<void> saveWebOSDeviceInfo(Map<String, dynamic> device) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
+    Map<String, dynamic> modifiedDevice = {
+      'id': device['id'] ?? '',
+      'lastKnownIPAddress': device['lastKnownIPAddress'] ?? '',
+      'friendlyName': device['friendlyName'] ?? 'Unknown',
+      'modelName': device['modelName'] ?? 'Unknown',
+      'modelNumber': device['modelNumber'] ?? 'Unknown',
+      'lastConnected': device['lastConnected'] ?? 0,
+      'lastDetection': device['lastDetection'] ?? 0,
+      'services': device['services']?.map((key, value) => MapEntry(key.toString(), value)) ?? {},
+    };
+    String deviceJson = jsonEncode(modifiedDevice);
 
-      // WebOS Device 데이터를 변환
-      Map<String, dynamic> modifiedDevice = {
-        'id': device['id'] ?? '',
-        'lastKnownIPAddress': device['lastKnownIPAddress'] ?? '',
-        'friendlyName': device['friendlyName'] ?? 'Unknown',
-        'modelName': device['modelName'] ?? 'Unknown',
-        'modelNumber': device['modelNumber'] ?? 'Unknown',
-        'lastConnected': device['lastConnected'] ?? 0,
-        'lastDetection': device['lastDetection'] ?? 0,
-        'services': device['services']?.map((key, value) => MapEntry(key.toString(), value)) ?? {},
-      };
-      String deviceJson = jsonEncode(modifiedDevice);
+    try {
       await prefs.setString('webos_device_info', deviceJson);
+      connectSdkService.logStreamController.add("WebOS device info saved: $modifiedDevice");
       print('WebOS device info saved: $modifiedDevice');
     } catch (e) {
       logD.e('Error saving device: $e');
@@ -79,6 +77,12 @@ class DeviceService {
       logD.e('Error fetching device info: $e');
     }
     return {};
+  }
+
+  Future connectToDevice() async {
+    final webOSDeviceInfo = await getWebOSDeviceInfo();
+    logD.i('webOSDeviceInfo try to connect $webOSDeviceInfo');
+    connectSdkService.connectToDevice(webOSDeviceInfo!);
   }
 
   Future<Map<String, dynamic>> getBleInfo() async {
@@ -144,16 +148,17 @@ class DeviceService {
     return null;
   }
 
-  Future<Map<String, dynamic>?> registerDevice(DeviceModel device) async {
-    print('device ${device.deviceId}');
+  Future<Map<String, dynamic>?> registerDevice(deviceId, deviceName, serialNumber) async {
     try {
-      return await apiService.postDeviceInfo(
-        deviceId: device.deviceId!,
-        deviceName: device.deviceName!,
-        serialNumber: device.serialNumber!,
+      final result = await apiService.postDeviceInfo(
+        deviceId: deviceId,
+        deviceName: deviceName,
+        serialNumber: serialNumber,
       );
+      logD.i('Register Result : $result');
+      return result;
     } catch (e) {
-      logD.e('Error registering device: $e');
+      logD.e('Error  device: $e');
     }
   }
 
@@ -165,7 +170,7 @@ class DeviceService {
         serialNumber: serialNumber,
       );
     } catch (e) {
-      logD.e('Error  device: $e');
+      logD.e('Error device: $e');
     }
   }
 
@@ -174,7 +179,7 @@ class DeviceService {
       final result = await apiService.postDeviceProvision(
         deviceId: deviceId,
       );
-      print('rererereresult $result');
+      logD.i('Provision Result : $result');
       return result;
     } catch (e) {
       logD.e('Error provisioning device: $e');
