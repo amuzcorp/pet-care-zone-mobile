@@ -1,6 +1,4 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
@@ -10,7 +8,6 @@ import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/inputs/pincode_input.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
-import '../../data/models/device_model.dart';
 import '6_register_page.dart';
 
 class PincodeConnectionPage extends StatefulWidget {
@@ -25,12 +22,6 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final LunaService lunaService = LunaService();
-
-  @override
-  void initState() {
-    super.initState();
-    connectSdkService.setupLogListener();
-  }
 
   @override
   void dispose() {
@@ -59,24 +50,6 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide5),
           PincodeInput(pincodeController: pincodeController),
-          Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  StreamBuilder<String>(
-                    stream: connectSdkService.logStream,
-                    builder: (context, logSnapshot) {
-                      final logMessage = logSnapshot.data ?? '';
-                      final displayMessage = _handleLogMessage(logMessage);
-                      return Text(
-                        displayMessage,
-                        style: TextStyle(color: displayMessage.isNotEmpty ? ColorConstants.red : Colors.transparent),
-                      );
-                    },
-                  ),
-                ],
-              )
-          ),
           const SizedBox(height: 16),
         ],
       ),

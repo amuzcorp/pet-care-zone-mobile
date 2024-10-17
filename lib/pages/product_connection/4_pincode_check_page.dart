@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
@@ -33,8 +32,6 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
     try {
       final deviceInfo = await deviceService.getWebOSDeviceInfo();
       if (deviceInfo != null) {
-        // await lunaService.scanWifi();
-        // await lunaService.checkWifiStatus();
         await connectSdkService.requestParingKey(deviceInfo);
       } else {
         print('No device information available');
@@ -48,11 +45,11 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   void initState() {
     super.initState();
     webOSInit();
+    getDeviceInfoAndRequestParingKey();
   }
 
   @override
   Widget build(BuildContext context) {
-    getDeviceInfoAndRequestParingKey();
     return BasicPage(
       showAppBar: true,
       description: "Pet Care Zone 제품 화면에\n8자리 PIN Code를 확인해주세요.",
@@ -60,17 +57,6 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
-          // StreamBuilder<String>(
-          //   stream: connectSdkService.logStream,
-          //   builder: (context, logSnapshot) {
-          //     final logMessage = logSnapshot.data ?? '';
-          //     final displayMessage = logMessage;
-          //     return Text(
-          //       displayMessage,
-          //       style: TextStyle(color: displayMessage.isNotEmpty ? ColorConstants.red : Colors.transparent),
-          //     );
-          //   },
-          // ),
         ],
       ),
       bottomButton: const BasicButton(

@@ -7,16 +7,20 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
+import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
-import 'package:wifi_iot/wifi_iot.dart';
+import 'package:petcarezone/services/message_service.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
+import '../../data/models/device_model.dart';
 import '../../services/luna_service.dart';
 import '../../services/wifi_service.dart';
+import '../../utils/logger.dart';
 import '../../widgets/box/box.dart';
 import '../../widgets/buttons/basic_button.dart';
+import '../../widgets/indicator/indicator.dart';
 import '../../widgets/page/basic_page.dart';
 
 class WifiConnectionPage extends StatefulWidget {
@@ -30,42 +34,44 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final WifiService wifiService = WifiService();
   final DeviceService deviceService = DeviceService();
   final LunaService lunaService = LunaService();
+  final BleService bleService = BleService();
+  final MessageService messageService = MessageService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final TextEditingController passwordController = TextEditingController();
   final LayerLink layerLink = LayerLink();
 
-  StreamController<String> messageController = StreamController<String>();
+  late StreamController<String> messageController;
 
   Uint8List? macAddressArray;
   String? macAddressWithSeparatorString = "";
 
-  String currentWifi = "";
   String selectedWifi = "";
   String selectedSecurityType = "";
   String password = "";
-  String errorText = "";
-  String sshHost = "";
   bool isLoading = false;
-  BluetoothDevice connectedDevice = FlutterBluePlus.connectedDevices.first;
   BluetoothCharacteristic? targetCharacteristic;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    getCharacteristics();
+    bleService.getCharacteristics();
   }
 
   @override
   void initState() {
     super.initState();
     wifiService.initialize();
+    messageController = messageService.messageController;
+    connectSdkService.setupListener();
+    connectSdkService.startScan();
     passwordController.clear();
-    print('connectedDevice $connectedDevice');
+    logD.i('BLE connectedDevice ${bleService.connectedDevice}');
   }
 
   @override
   void dispose() {
     wifiService.dispose();
+    connectSdkService.stopScan();
     passwordController.dispose();
     messageController.close();
     super.dispose();
@@ -94,23 +100,15 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
           ),
           boxH(10),
           widgetPasswordField(),
+          boxH(16),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                StreamBuilder<String>(
-                  stream: messageController.stream,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasData) {
-                      return Text(snapshot.data!, style: TextStyle(color: ColorConstants.red));
-                    }
-                    return Container();
-                  },
-                ),
-                // Text(errorText, style: TextStyle(color: ColorConstants.red)),
+                isLoading ? const GradientCircularLoader() : Container(),
+                errorStreamBuilder(),
               ],
-            ),
+            )
           ),
           boxH(16),
         ],
@@ -119,6 +117,16 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
         text: "연결하기",
         onPressed: connectToWifi,
       ),
+    );
+  }
+
+  Widget errorStreamBuilder() {
+    return StreamBuilder<String>(
+      stream: messageController.stream,
+      builder: (context, snapshot) {
+        String errorText = snapshot.data ?? "";
+        return Text(errorText, style: TextStyle(color: ColorConstants.red),);
+      },
     );
   }
 
@@ -174,7 +182,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
             onChanged: (String? newValue) {
               setState(() {
                 selectedWifi = newValue ?? '';
-                print('selectedWifi $selectedWifi');
               });
             },
           ),
@@ -207,12 +214,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       ),
       controller: passwordController,
       obscureText: true,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return '*Wi-Fi 비밀번호를 입력해 주세요.';
-        }
-        return null;
-      },
       onChanged: (value) {
         setState(() {
           password = value;
@@ -221,191 +222,87 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     );
   }
 
-  Future getCharacteristics() async {
-    if (connectedDevice != null) {
-      await Future.delayed(const Duration(seconds: 2)); // 서비스 검색 전 대기
-
-      List<BluetoothService> services = await connectedDevice.discoverServices();
-      for (BluetoothService service in services) {
-        for (BluetoothCharacteristic characteristic in service.characteristics) {
-          /// 쓰기 가능한 characteristic을 찾는다
-          if (characteristic.properties.write) {
-            targetCharacteristic = characteristic;
-            print("구독 가능한 characteristic 발견: ${characteristic.uuid}");
-          }
-        }
-      }
-
-      if (targetCharacteristic == null) {
-        print("쓰기 가능한 characteristic을 찾지 못했습니다.");
-      }
-    } else {
-      print("연결된 기기가 없습니다.");
-    }
-  }
-
-  Future<void> connectToWifi() async {
-    await getCurrentSSID();
-
-    if (!mounted) return;
-
-    if (currentWifi != selectedWifi) {
-      messageController.add('*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi');
-      return;
-    }
-
-    if (password.isEmpty) {
-      messageController.add('*Wi-Fi 비밀번호를 입력해주세요.');
-      return;
-    }
-
-    if (connectedDevice != null) {
-      await setRegistration();
-      await sendWifiCredentialsToBLE(selectedWifi, password);
-      navigateToPincodeCheckPage();
-    } else {
-      messageController.add('* BLE 연결을 확인해주세요.');
-    }
-  }
-
-  Future<void> setRegistration() async {
-    await generateRandomMacAddressWithSeparator();
-    Uint8List dataArray = Uint8List.fromList(macAddressArray ?? Uint8List(0)); // Null일 경우 빈 배열로 대체
-
-    Uint8List result = Uint8List(dataArray.length + 1); // Create a new array with extra space for 0x00
-    result[0] = 0x00; // Add 0x00 : setRegistration id
-    result.setRange(1, result.length, dataArray); // Copy the original result into the new array
-
-    print("result with 0x00 at the front: ${result}");
-    print("result in Hex: [${result.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}]");
-
-    // Here you can send 'result' to your BLE characteristic
-    await targetCharacteristic!.write(result);
-  }
-
-  Future<void> sendWifiCredentialsToBLE(String ssid, String password) async {
-    if (targetCharacteristic != null) {
-      try {
-        /// 연결된 BLE 기기에 SSID + PW 전송
-        String securityType = "PSK";
-        String isHidden = "FALSE";
-
-        String dataToSend = '$ssid\u0000\u0000$password\u0000\u0000$securityType\u0000\u0000$isHidden';
-        await writeCharacteristic(dataToSend);
-      } catch (e) {
-        messageController.add('* BLE 기기와 통신 오류 발생');
-      }
-    } else {
-      messageController.add('* 지원 불가 BLE입니다.');
-    }
-  }
-
-  String makeKey(String key, Uint8List uuid) {
-    print("UUID length: ${uuid.length}");
-    int keyValue = 0;
-    if ((uuid[1] & 0x01) == 0x01) {
-      keyValue = 1;
-    }
-
-    int uuidIndex = 0;
-
-    // char 단위로 XOR 연산 수행
-    for (int i = 0; i < key.length; i++) {
-      if (i % 2 == keyValue) {
-        // 현재 문자와 uuid의 문자를 XOR
-        key = key.replaceRange(i, i + 1,
-            String.fromCharCode(key.codeUnitAt(i) ^ uuid[++uuidIndex % uuid.length])); // XOR 연산 후 문자로 변환
-      }
-    }
-
-    return key;
-  }
-
-
-  Future<void> writeCharacteristic(String value) async {
-    macAddressWithSeparatorString = macAddressArray
-        ?.map((byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .join(':');
-
-    final String uuidString = targetCharacteristic!.uuid.toString();
-    final Uint8List uuidArray = Uint8List(2);
-    uuidArray[0] = int.parse(uuidString.substring(0, 2), radix: 16);
-    uuidArray[1] = int.parse(uuidString.substring(2, 4), radix: 16);
-
-    String key = "";
-    key = makeKey(macAddressWithSeparatorString?? "", uuidArray);
-
-    print("key: $key");
-    String hexKey = key.split('').map((char) {
-      int codeUnit = char.codeUnitAt(0);
-      return codeUnit.toRadixString(16).padLeft(2, '0');
-    }).join(', ').toUpperCase(); // 문자열로 조합
-
-    print("Key in Hex: [$hexKey]");
-
-    print("dataToSend: ${value}");
-
-    Uint8List encryptedBytes = encryptXOR(value, value.length, key);
-
-    // Adding 0x0A(action id for Wifi Sync Info) byte at the front of result
-    Int8List finalResult = Int8List(encryptedBytes.length + 1); // Create a new array with extra space for 0x0A
-    finalResult[0] = 0x0A; // Add 0x0A at the front
-    finalResult.setRange(1, finalResult.length, encryptedBytes); // Copy the original result into the new array
-
-    print("Final result with 0x0A at the front: ${finalResult}");
-    print("Final result in Hex: ${finalResult.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join(', ')}");
-
-    await targetCharacteristic!.write(finalResult);
-  }
-
-  Uint8List encryptXOR(String original, int originalLength, String key) {
-    if (original.isEmpty || key.isEmpty || originalLength <= 0) {
-      return Uint8List(0);
-    }
-
-    List<int> result = List<int>.filled(originalLength, 0);
-
-    for (int i = 0; i < originalLength; i++) {
-      result[i] = original.codeUnitAt(i) ^ key.codeUnitAt(i % key.length); // XOR 연산
-    }
-
-    return Uint8List.fromList(result);
-  }
-
-  Future generateRandomMacAddressWithSeparator() async {
-    final rand = Random();
-    List<int> macAddressBytes = [];
-
-    for (int i = 0; i < 6; i++) {
-      int value = rand.nextInt(256); // 0-255 random value
-      macAddressBytes.add(value);    // Add byte value
-    }
-    print('macAddressArray $macAddressBytes');
-    macAddressArray = Uint8List.fromList(macAddressBytes);
-  }
-
-
-
-  void handleReceivedData(String data) {
-    print('data $data');
-    // 수신된 데이터를 처리하는 로직 (Wi-Fi 연결 결과 등)
-    if (data.contains("success")) {
-      print("Wi-Fi 연결 성공!");
-      // 성공 시 처리
-    } else if (data.contains("fail")) {
-      print("Wi-Fi 연결 실패.");
-      // 실패 시 처리
-    } else {
-      print("알 수 없는 데이터: $data");
-    }
-  }
-
-  Future getCurrentSSID() async {
-    return currentWifi = (await WiFiForIoTPlugin.getSSID())!;
-  }
-
   Future<void> navigateToPincodeCheckPage() async {
     wifiService.scanTimer?.cancel();
     Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
+  }
+
+  Future<void> connectToWifi() async {
+    // if (!mounted) return;
+    if (!await checkWifiConnection()) return;
+    if (!checkPassword()) return;
+    if (bleService.connectedDevice == null) {
+      messageController.add('* BLE 연결을 확인해주세요.');
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+    });
+    try {
+      await bleService.setRegistration();
+      await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
+      await getWebosDeviceInfoAndNavigate();
+    } catch (e) {
+      errorListener(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  errorListener(error) async {
+    String bleErrorText = e.toString().toLowerCase();
+    if (bleErrorText.contains('disconnect')) {
+      messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
+    } else {
+      messageController.add('에러가 발생했어요. $error');
+    }
+  }
+
+  Future getWebosDeviceInfoAndNavigate() async {
+    await Future.delayed(const Duration(seconds: 4));
+    final matchedWebosDevice = connectSdkService.matchedWebosDevice;
+
+    print('matchedWebosDevice $matchedWebosDevice');
+
+    if (matchedWebosDevice.isNotEmpty) {
+      messageController.add('');
+
+      /// DeviceModel 생성
+      final deviceModel = DeviceModel(
+        serialNumber: matchedWebosDevice['modelNumber'],
+        deviceName: matchedWebosDevice['friendlyName'],
+        deviceIp: matchedWebosDevice['lastKnownIPAddress'],
+      );
+
+      /// webOS Whole Data 저장
+      await deviceService.saveWebOSDeviceInfo(matchedWebosDevice);
+
+      /// webOS 필요한 Data 저장
+      await deviceService.saveDeviceInfo(deviceModel);
+      navigateToPincodeCheckPage();
+    } else {
+      messageController.add('webOS 기기 연결이 되지 않았어요.\n연결하기 버튼을 한번 더 눌러주세요.');
+    }
+  }
+
+  Future<bool> checkWifiConnection() async {
+    String currentWifi = await wifiService.getCurrentSSID();
+    print('currentWifi $currentWifi');
+    if (currentWifi != selectedWifi) {
+      messageController.add('*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi');
+      return false;
+    }
+    return true;
+  }
+
+  bool checkPassword() {
+    if (password.isEmpty) {
+      messageController.add('*Wi-Fi 비밀번호를 입력해주세요.');
+      return false;
+    }
+    return true;
   }
 }
