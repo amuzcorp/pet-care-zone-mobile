@@ -82,7 +82,7 @@ class _DeviceRegisterCardState extends State<DeviceRegisterCard> {
           children: [
             Image.asset(
               ImageConstants.productConnectionGuide8,
-              height: 40,
+              height: 34,
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -97,7 +97,7 @@ class _DeviceRegisterCardState extends State<DeviceRegisterCard> {
                     ),
                     decoration: InputDecoration(
                       border: InputBorder.none,
-                      hintText: '닉네임 입력...',
+                      hintText: "제품 닉네임",
                       hintStyle: TextStyle(
                         color: ColorConstants.inputLabelColor,
                       ),

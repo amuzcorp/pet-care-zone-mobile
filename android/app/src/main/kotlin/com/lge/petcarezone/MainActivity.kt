@@ -48,7 +48,7 @@ class MainActivity: FlutterActivity() {
         logChannel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "onMessage" -> {
-                    result.success(call.arguments())
+                    result.success(call.arguments)
                 }
                 else -> {
                     result.notImplemented()
@@ -94,6 +94,15 @@ class MainActivity: FlutterActivity() {
         })
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
+                "connectToDevice" -> {
+                    val deviceJson = call.argument<String>("device")
+                    deviceJson?.let {
+                        val device = jsonToDevice(it)
+                        device?.let { device ->
+                            discoveryListener.connectToDevice(device)
+                        } ?: result.error("INVALID_JSON", "Failed to convert JSON to ConnectableDevice", null)
+                    } ?: result.error("UNAVAILABLE", "Device JSON not available.", null)
+                }
                 "startScan" -> {
                     discoveryListener.startScan()
                 }

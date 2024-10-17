@@ -16,15 +16,6 @@ class LunaService {
     }
   }
 
-  Future lunaTest() async {
-    const String uri = ApiUrls.lunaTest;
-    try {
-      webOSRequest(uri, {});
-    } catch (e) {
-      throw Exception('Failed Response $e');
-    }
-  }
-
   Future checkWifiStatus() async {
     const String uri = ApiUrls.lunaWifiStatusUrl;
     try {
@@ -33,35 +24,6 @@ class LunaService {
       throw Exception('Failed Response $e');
     }
   }
-
-  Future scanWifi() async {
-    final String uri = await ApiUrls.lunaWifiScan['uri'];
-    final Map payload = await ApiUrls.lunaWifiScan['payload'];
-    try {
-      await webOSRequest(uri, payload);
-    } catch (e) {
-      throw Exception('Failed Response $e');
-    }
-  }
-
-  Future connectWifi(String wifi, String passKey) async {
-    final wifiData = ApiUrls.getLunaWifiConnectUrl(wifi, passKey);
-    print('wifiData $wifiData');
-
-    final String? uri = wifiData['uri'];
-    final String? payloadString = wifiData['payload'];
-    print('uri $uri, payloadString: $payloadString');
-
-    final Map<String, dynamic>? payload = jsonDecode(payloadString!);
-    print('Decoded payload: $payload');
-
-    try {
-      await webOSRequest(uri, payload);
-    } catch (e) {
-      throw Exception('Failed Response $e');
-    }
-  }
-
 
   Future startProvision() async {
     const String uri = ApiUrls.lunaProvisionUrl;
@@ -72,8 +34,8 @@ class LunaService {
     }
   }
 
-  Future startProvision2() async {
-    const String uri = ApiUrls.lunaProvisionUrl2;
+  Future getWifiProfileList() async {
+    const String uri = ApiUrls.getWifiProfileList;
     try {
       webOSRequest(uri, {});
     } catch (e) {
@@ -81,10 +43,24 @@ class LunaService {
     }
   }
 
-  Future lunaGetProfileList() async {
-    const String uri = ApiUrls.lunaGetProfileList;
+  Future<void> registerUserProfile(String userId, int petId) async {
+    Map<String, dynamic> userData = Map<String, dynamic>.from(ApiUrls.registerUserProfile);
+
+    final String? uri = userData['uri'];
+
+    userData['payload']['userId'] = userId;
+    userData['payload']['petId'] = petId;
+
+    print('userId: ${userData['payload']['userId']}');
+
     try {
-      webOSRequest(uri, {});
+      String payloadString = jsonEncode(userData['payload']);
+      final Map<String, dynamic>? payload = jsonDecode(payloadString!);
+      print('Decoded payload: $payload');
+
+      print('lunaRegisterUserProfile $payload');
+
+      webOSRequest(uri, payload);
     } catch (e) {
       throw Exception('Failed Response $e');
     }

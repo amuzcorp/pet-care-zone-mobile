@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/icon_constants.dart';
 import 'package:petcarezone/data/models/device_model.dart';
+import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/cards/device_register_card.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/api_urls.dart';
 import '../../services/connect_sdk_service.dart';
 import '../../widgets/page/basic_page.dart';
@@ -21,23 +23,34 @@ class RegisterCompletePage extends StatefulWidget {
 class _RegisterCompletePageState extends State<RegisterCompletePage> {
   final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
-  DeviceModel? deviceModel;
-  String deviceName = '';
+  String deviceId = '';
+  String deviceName = '제품 닉네임';
+  String modelNumber = '';
+  String guideMessage = '제품 이름을 바꿀 수 있어요.';
+  List<String> logMessages = [];
 
-  Future<void> getDeviceInfo() async {
-    deviceModel = await deviceService.getDeviceInfo();
-    setState(() {
-      deviceName = deviceModel?.deviceName ?? '';
-    });
+  Future getWebOSDeviceInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    final webOSDeviceInfo = await deviceService.getWebOSDeviceInfo();
+    modelNumber = webOSDeviceInfo['modelNumber'];
+    deviceId = prefs.getString("deviceId")!;
+    print('8 deviceId $deviceId');
   }
 
-  Future<void> modifyDeviceInfo() async {
-    if (deviceModel != null) {
-      await deviceService.modifyDevice(
-        deviceModel!.deviceId,
+  Future registerDeviceInfo() async {
+    print('deviceId $deviceId\n deviceName $deviceName\n modelNumber $modelNumber');
+    if (deviceId.isNotEmpty && deviceName.isNotEmpty && modelNumber.isNotEmpty) {
+      await deviceService.registerDevice(
+        deviceId,
         deviceName,
-        deviceModel!.serialNumber,
+        modelNumber,
       );
+
+      await deviceService.provisionDevice(
+        deviceId!,
+      );
+    } else {
+      guideMessage = '제품 정보를 먼저 등록해 주세요.';
     }
   }
 
@@ -51,7 +64,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   @override
   void initState() {
     super.initState();
-    getDeviceInfo();
+    getWebOSDeviceInfo();
   }
 
   @override
@@ -71,7 +84,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
           ),
           boxH(15),
           Text(
-            '제품 이름을 바꿀 수 있어요.',
+            guideMessage,
             style: TextStyle(
               color: ColorConstants.inputLabelColor,
             ),
@@ -90,10 +103,10 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
           BasicButton(
             text: "반려동물 프로필 등록",
             onPressed: () => {
-              modifyDeviceInfo(),
+              registerDeviceInfo(),
               if (mounted)
                 {
-                  Navigator.pushReplacement(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => WebViewPage(

@@ -4,27 +4,25 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:mqtt5_client/mqtt5_client.dart';
-import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
+import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/user_service.dart';
-import 'package:petcarezone/utils/permissionCheck.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/navigator/navigator.dart';
-import '1-2_power_check_page.dart';
 
 class WebViewPage extends StatefulWidget {
-  const WebViewPage({super.key, required this.uri, required this.backPage});
+  const WebViewPage({super.key, required this.uri, this.backPage});
 
   final Uri uri;
-  final Widget backPage;
+  final Widget? backPage;
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -32,25 +30,18 @@ class WebViewPage extends StatefulWidget {
 
 class _WebViewPageState extends State<WebViewPage> {
   static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
-  late MqttServerClient client;
   late final WebViewController controller;
   late final PlatformWebViewControllerCreationParams params;
+  final ConnectSdkService connectSdkService = ConnectSdkService();
   final userService = UserService();
   final deviceService = DeviceService();
   final lunaService = LunaService();
-  final permissionCheck = PermissionCheck();
-  String? deviceIp = "";
   String? deviceId = "";
   String userId = "";
   int petId = 0;
-  bool isSubscribed = false;
   bool isSetPetInfo = false;
 
-  Future mqttInit() async {
-    client = MqttServerClient(
-      'axjobfp4mqj2j-ats.iot.ap-northeast-2.amazonaws.com',
-      'clientIdentifier',
-    );
+  Future webViewInit() async {
     params = const PlatformWebViewControllerCreationParams();
     controller = WebViewController.fromPlatformCreationParams(
       params,
@@ -75,162 +66,57 @@ class _WebViewPageState extends State<WebViewPage> {
       );
     }
   }
-
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i('Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId, deviceIp: $deviceIp');
-    await trackPetId();
+    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
-  /// 0. get user info
+  /// 1. get user info
   Future getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    deviceIp = await deviceService.getDeviceIp();
     userId = prefs.getString('userId')!;
     deviceId = prefs.getString('deviceId');
     petId = prefs.getInt('petId')!;
-
-    print('userId $userId');
-    print('deviceId $deviceId');
-    print('petId $petId');
   }
 
+  /// 2. set user info
   Future setUserInfo() async {
     final accessToken = await userService.getAccessToken();
+    print('setUserInfo accesst $accessToken');
     await controller.runJavaScript("""
     localStorage.setItem('accessToken', '$accessToken');
     localStorage.setItem('userId', '$userId');
-    localStorage.setItem('petId', '$petId');
-    localStorage.setItem('deviceId', '$deviceId');
+    localStorage.setItem('petId', '${petId == 0 ? "" : petId}');
+    localStorage.setItem('deviceId', '${deviceId!.isEmpty ? "" : deviceId}');
     """);
+    await getLocalStorageValues();
   }
 
-  /// 1. pet id check
+  /// 3. pet id check
   Future<void> trackPetId() async {
     final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
-    int localStoragePetId = int.tryParse(petIdStr) ?? 0;
-
+    print('petIdStr $petIdStr');
     /// 2. petId 있는 경우
-    if (localStoragePetId != 0) {
-      logD.i('PetId updated to $localStoragePetId, stopping tracking.');
-      petId = localStoragePetId;
+    if (petIdStr.isNotEmpty) {
+      logD.i('PetId updated to $petIdStr, stopping tracking.');
+      petId = int.tryParse(petIdStr)!;
+      print('petId $petId');
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('petId', localStoragePetId);
+      await prefs.setInt('petId', petId);
 
       /// 3. device에 pet,user info 등록
-      // await setPetInfo();
-
-      /// 4. pet,user info 등록된 경우 device mqtt 구독
-      // if (isSetPetInfo) {
-      await mqttSubscribe();
-      // }
+      await setPetInfo();
+    } else {
+      logD.e('Pet id 없음.');
     }
   }
 
-  // Future setPetInfo() async {
-  //   isSetPetInfo = true;
-  //   return await lunaService.setPetInfo(deviceIp!, userId, petId.toString());
-  // }
-
-  Future mqttCertInitialize() async {
-    final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey =
-        await rootBundle.load('assets/data/claim-private.key');
-    final rootCA = await rootBundle.load('assets/data/root-CA.crt');
-
-    final context = SecurityContext(withTrustedRoots: false);
-    context.useCertificateChainBytes(claimCert.buffer.asUint8List());
-    context.usePrivateKeyBytes(claimPrivateKey.buffer.asUint8List());
-    context.setTrustedCertificatesBytes(rootCA.buffer.asUint8List());
-
-    try {
-      client
-        ..useWebSocket = false
-        ..port = 8883
-        ..secure = true
-        ..securityContext = context;
-    } catch (e) {
-      logD.e('Error loading certificates: $e');
-    }
-  }
-
-  Future mqttSubscribe() async {
-    if (!isSubscribed) {
-      await mqttCertInitialize();
-      final accessToken = await userService.getAccessToken();
-      await controller.runJavaScript("""
-    localStorage.setItem('accessToken', '$accessToken');
-    localStorage.setItem('userId', '$userId');
-    localStorage.setItem('petId', '$petId');
-    localStorage.setItem('deviceId', '$deviceId');
-    """);
-
-      try {
-        await client.connect();
-        if (client.connectionStatus?.state == MqttConnectionState.connected) {
-          logD.i('AWS IoT에 연결됨');
-          subscribe();
-        } else {
-          logD.e('AWS IoT에 연결 실패');
-        }
-      } catch (e) {
-        logD.e('Error: $e');
-        client.disconnect();
-      }
-    }
-  }
-
-  void subscribe() {
-    final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
-    final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
-
-    logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
-
-    client.subscribe(stateTopic, MqttQos.atLeastOnce);
-    client.subscribe(eventTopic, MqttQos.atLeastOnce);
-
-    client.updates.listen((List<MqttReceivedMessage<MqttMessage>> messages) {
-      for (dynamic message in messages) {
-        final payload = message.payload as MqttPublishMessage;
-        final payloadMsg = MqttUtilities.bytesToStringAsString(payload.payload.message!);
-        final jsonPayload = jsonDecode(payloadMsg) as Map<String, dynamic>;
-        if (message.topic == stateTopic) {
-          _sendToWebView(jsonPayload, 'stateTopic');
-        } else if (message.topic == eventTopic) {
-          _sendToWebView(jsonPayload, 'eventTopic');
-        }
-      }
-    }).onError((error) {
-      logD.e('Error while listening to updates: $error');
-    });
-
-    isSubscribed = true;
-  }
-
-  Future _sendToWebView(Map<String, dynamic> data, String topic) async {
-    if (topic == 'eventTopic') {
-      String jsonData = jsonEncode(data);
-
-      await controller.runJavaScript("localStorage.setItem('eventTopic', '$jsonData');");
-
-      final result = await controller.runJavaScriptReturningResult("localStorage.getItem('eventTopic');");
-      print('event result $result');
-    }
-
-    if (topic == 'stateTopic') {
-      String jsonData = jsonEncode(data);
-
-      await controller.runJavaScript("localStorage.setItem('stateTopic', '$jsonData');");
-
-      final result = await controller.runJavaScriptReturningResult("localStorage.getItem('stateTopic');");
-      print('state result $result');
-    }
-  }
-
-  void disconnect() {
-    client.disconnect();
+  Future setPetInfo() async {
+    isSetPetInfo = true;
+    print('setPetInfo $userId,$petId');
+    await lunaService.registerUserProfile(userId, petId);
   }
 
   Future getLocalStorageValues() async {
@@ -281,7 +167,16 @@ class _WebViewPageState extends State<WebViewPage> {
     }
     if (message.message == "deleteDevice") {
       logD.i("Device info deleted. navigate to device register page.");
-      navigator(context, () => const PowerCheckPage());
+      final prefs = await SharedPreferences.getInstance();
+      prefs.setString('userId', "");
+      prefs.setString('deviceId', "");
+      prefs.setInt('petId', 0);
+      if (mounted) {
+        navigator(context, () => const InitialDeviceHomePage());
+      }
+    }
+    if (message.message == "petId") {
+      await trackPetId();
     }
 
     if (message.message == "backButtonClicked") {
@@ -291,24 +186,18 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  backPageNavigator() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => widget.backPage), (route) => false,
-    );
+  void backPageNavigator() {
+    if (widget.backPage != null) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => widget.backPage!),
+            (route) => false,
+      );
+    } else {
+      Navigator.pop(context);
+    }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    mqttInit();
-  }
-
-  @override
-  void dispose() {
-    disconnect();
-    super.dispose();
-  }
 
   Future<bool> onWillPopFunction() async {
     if (!Platform.isAndroid) {
@@ -323,10 +212,15 @@ class _WebViewPageState extends State<WebViewPage> {
           currentUrl.contains('/timeline') ||
           currentUrl.contains('/ai-health')) {
         if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => widget.backPage),
-          );
+          if (widget.backPage != null) {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => widget.backPage!),
+                  (route) => false,
+            );
+          } else {
+            Navigator.pop(context);
+          }
         }
       } else {
         controller.runJavaScript(
@@ -337,31 +231,47 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    webViewInit();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: WillPopScope(
         onWillPop: onWillPopFunction,
-        child: WebViewWidget(
-          controller: controller
-            ..setJavaScriptMode(JavaScriptMode.unrestricted)
-            ..setNavigationDelegate(
-              NavigationDelegate(
-                onPageStarted: (String url) async {
-                  await userInfoInit();
-                  await trackPetId();
-                },
-              ),
-            )
-            ..addJavaScriptChannel(
-              'Flutter',
-              onMessageReceived: (JavaScriptMessage message) async {
-                await jsChannelListener(message);
-              },
-            )
-            ..loadRequest(
-              Uri.parse(ApiUrls.webViewUrl),
+        child: Column(
+          children: [
+            Expanded(
+              child: WebViewWidget(
+              controller: controller
+                ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                ..setNavigationDelegate(
+                  NavigationDelegate(
+                    onPageStarted: (String url) {
+                      userInfoInit();
+                    },
+                  ),
+                )
+                ..addJavaScriptChannel(
+                  'Flutter',
+                  onMessageReceived: (JavaScriptMessage message) async {
+                    await jsChannelListener(message);
+                  },
+                )
+                ..loadRequest(
+                  Uri.parse(ApiUrls.webViewUrl),
+                ),
             ),
-        ),
+            )
+          ],
+        )
       ),
     );
   }

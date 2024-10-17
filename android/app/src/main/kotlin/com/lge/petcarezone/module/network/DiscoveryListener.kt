@@ -1,6 +1,8 @@
 package com.lge.petcarezone.module.network
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.connectsdk.device.ConnectableDevice
@@ -10,9 +12,9 @@ import com.connectsdk.service.WebOSTVService
 import com.connectsdk.service.capability.listeners.ResponseListener
 import com.connectsdk.service.command.ServiceCommand
 import com.connectsdk.service.command.ServiceCommandError
+import com.connectsdk.service.webos.WebOSTVServiceSocketClient
 import com.lge.petcarezone.module.activities.IActivityController
 import io.flutter.plugin.common.MethodChannel
-import org.json.JSONException
 import org.json.JSONObject
 
 class DiscoveryListener(private val controller: IActivityController) : DiscoveryManagerListener {
@@ -47,6 +49,10 @@ class DiscoveryListener(private val controller: IActivityController) : Discovery
         mDiscoveryManager = DiscoveryManager.getInstance()
         mDiscoveryManager?.addListener(this)
         mDiscoveryManager?.pairingLevel = DiscoveryManager.PairingLevel.ON
+    }
+
+    fun connectToDevice(device: ConnectableDevice?) {
+        device?.connect()
     }
 
     fun startScan() {
@@ -136,7 +142,7 @@ class DiscoveryListener(private val controller: IActivityController) : Discovery
             Log.d("CHECK ServiceCommand", webOSTVService.toString())
             if (webOSTVService != null) {
                 Log.d("CHECK webOSRequest", "URI: $uri, Payload: $payload")
-                val command = ServiceCommand<ResponseListener<Any>>(
+                val command = ServiceCommand<ResponseListener<JSONObject>>(
                     webOSTVService,
                     uri,
                     payload,
@@ -153,9 +159,12 @@ class DiscoveryListener(private val controller: IActivityController) : Discovery
                             // Send only the necessary error data to Flutter
                             channel?.invokeMethod("webOSRequest", mapOf("success" to false, "error" to error.toString()))
                         }
-                    })
+                    }
+                )
 
                 command.send()
+                channel?.invokeMethod("webOSRequest", mapOf("uri" to uri, "payload" to payload.toString()))
+
                 Log.d("Command", "Command sent: URI - $uri, Payload - $payload")
             } else {
                 Log.d("WebOSTVService not available", "Check the webOS TV Service")

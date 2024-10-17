@@ -17,8 +17,7 @@ class UserService {
 
   Future<Widget> initializeApp() async {
     if (await isTokenValid()) {
-      // return const InitialDeviceHomePage();
-      return const PowerCheckPage();
+      return const InitialDeviceHomePage();
     } else {
       return const LoginPage();
     }
@@ -50,8 +49,7 @@ class UserService {
         if (context.mounted) {
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(
-              // builder: (context) => const InitialDeviceHomePage(),
-              builder: (context) => const PowerCheckPage(),
+              builder: (context) => const InitialDeviceHomePage(),
             ),
           );
         }

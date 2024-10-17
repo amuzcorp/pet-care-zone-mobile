@@ -27,13 +27,13 @@ class _DeviceListState extends State<DeviceList> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final WifiService wifiService = WifiService();
-  StreamSubscription<List<Map<String, dynamic>>>? _deviceStreamSubscription;
 
   final double itemHeight = 87.0;
 
   Future<void> bleConnectToDevice(BluetoothDevice device) async {
     print('bleConnectToDevice $device');
     try {
+      await device.disconnect();
       await device.connect();
       print('Device connected: $device');
     } catch (e) {
@@ -59,31 +59,8 @@ class _DeviceListState extends State<DeviceList> {
       /// BLE Data
       await deviceService.saveBleInfo(bluetoothDevice);
 
-      if (connectSdkService.devices.isNotEmpty) {
-        print('connectSdkService.devices ${connectSdkService.devices}');
-        final webOSDevice = connectSdkService.devices.firstWhere(
-              (webOSDevice) => webOSDevice['friendlyName'].trim() == device['platformName'].trim(),
-        );
-
-        if (webOSDevice.isNotEmpty) {
-          print('webOSDevice $webOSDevice');
-          /// DeviceModel 생성
-          final deviceModel = DeviceModel(
-            serialNumber: webOSDevice['modelNumber'],
-            deviceName: webOSDevice['friendlyName'],
-            deviceIp: webOSDevice['lastKnownIPAddress'],
-          );
-
-          /// webOS Whole Data
-          await deviceService.saveWebOSDeviceInfo(webOSDevice);
-
-          /// webOS necessary Data
-          await deviceService?.saveDeviceInfo(deviceModel);
-        }
-      }
-
       if (mounted) {
-        Navigator.push(
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => const WifiConnectionPage(),
@@ -92,7 +69,7 @@ class _DeviceListState extends State<DeviceList> {
       }
 
     } catch (e) {
-      print('Error during saveDevicesAndNavigate: $e');
+      logD.e('Error during saveDevicesAndNavigate: $e');
       rethrow;
     } finally {
       widget.onLoadingChanged?.call(false);
@@ -102,19 +79,12 @@ class _DeviceListState extends State<DeviceList> {
   @override
   void initState() {
     super.initState();
-    connectSdkService.bleStartScan();
-    connectSdkService.startScan();
-    connectSdkService.setupListener();
-    _deviceStreamSubscription = connectSdkService.deviceStream.listen((data) {
-      if(mounted) {
-        setState(() {});
-      }
-    });
+    connectSdkService.startBleScan();
   }
 
   @override
   void dispose() {
-    connectSdkService.stopScan();
+    connectSdkService.stopBleScan();
     super.dispose();
   }
 
@@ -138,7 +108,7 @@ class _DeviceListState extends State<DeviceList> {
             return const Center(child: GradientCircularLoader());
           }
 
-            final devices = snapshot.data!.toList();
+          final devices = snapshot.data!.toList();
 
           final maxContainerHeight = MediaQuery.of(context).size.height - 20.0;
           final containerHeight = (devices.length * itemHeight).clamp(itemHeight, maxContainerHeight);

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/font_constants.dart';
+import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import '../appbars/basic_appbar.dart';
 
 class BasicPage extends StatelessWidget {
-  const BasicPage({
+  BasicPage({
     super.key,
     required this.showAppBar,
     this.title,
@@ -30,11 +31,15 @@ class BasicPage extends StatelessWidget {
   final Widget? bottomButton;
   final Widget? backgroundImage;
 
+  static bool devMode = false;
+
+  ConnectSdkService connectSdkService = ConnectSdkService();
+
   @override
   Widget build(BuildContext context) {
+    int tapCount = 0;
     final isKeyboardVisible = MediaQuery.of(context).viewInsets.bottom > 0;
 
-    // 배경 이미지가 있을 때만 Stack을 사용
     Widget pageContent = Column(
       mainAxisAlignment: MainAxisAlignment.start,
       children: [
@@ -61,13 +66,42 @@ class BasicPage extends StatelessWidget {
             child: contentWidget ?? Container(),
           ),
         ),
+        if (devMode)
+          StreamBuilder<String>(
+            stream: connectSdkService.logStream, // Still subscribe to logStream for new updates
+            builder: (context, logSnapshot) {
+              if (logSnapshot.hasData) {
+                // Only add the log if it's not already in collectedLogs
+                if (!connectSdkService.collectedLogs.contains(logSnapshot.data)) {
+                  connectSdkService.collectedLogs.add(logSnapshot.data!);
+                }
+              }
+
+              return Expanded(
+                child: ListView.builder(
+                  itemCount: connectSdkService.collectedLogs.length, // Use the full collectedLogs list
+                  itemBuilder: (context, index) {
+                    return Text('${connectSdkService.collectedLogs[index]}\n'); // Display the full log history
+                  },
+                ),
+              );
+            },
+          ),
         bottomButton ?? Container()
       ],
     );
 
-    // 배경 이미지가 있으면 Stack을 사용해서 배경을 넣고, 없으면 일반적인 Column 레이아웃 사용
     return GestureDetector(
       onTap: () {
+        tapCount++; // 탭 카운트 증가
+        if (tapCount >= 7) {
+          tapCount = 0;
+          devMode = !devMode;
+
+          final message = devMode ? 'Dev Mode Activated!' : 'Dev Mode Deactivated!'; // 메시지 선택
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+        }
+
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(

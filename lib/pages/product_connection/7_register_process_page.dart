@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/image_constants.dart';
+import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../utils/logger.dart';
 import '../../widgets/images/image_widget.dart';
-import '../../widgets/navigator/navigator.dart';
 import '../../widgets/page/basic_page.dart';
 import '8_register_complete_page.dart';
 
@@ -21,39 +19,26 @@ class RegisterProcessPage extends StatefulWidget {
 class _RegisterProcessPageState extends State<RegisterProcessPage> {
   DeviceService deviceService = DeviceService();
   LunaService lunaService = LunaService();
+  ConnectSdkService connectSdkService = ConnectSdkService();
   double progressValue = 0;
+  List<String> logMessages = [];
+
 
   Future handleDeviceRegistrationAndProvision() async {
-    final prefs = await SharedPreferences.getInstance();
-
     try {
       final device = await deviceService.getDeviceInfo();
       if (device == null) {
         print('No device info available.');
         return;
+      } else {
+        await deviceService.connectToDevice();
       }
-      await Future.delayed(const Duration(seconds: 3));
 
+      await Future.delayed(const Duration(seconds: 3));
       await lunaService.startProvision();
-
-      await Future.delayed(const Duration(seconds: 3));
-
-      await lunaService.startProvision2();
-
-      // final deviceId = device.deviceId;
-      // await prefs.setString('deviceId', deviceId!);
-      //
-      // final registerResult = await deviceService.registerDevice(device);
-      // logD.i('Device register result : $registerResult');
-      //
-      // final provisionResult = await deviceService.provisionDevice(deviceId);
-      // logD.i('Device provision result : $provisionResult');
-
-      // if (provisionResult?['message'] == 'Success' || registerResult?['message'].contains('already')) {
-      await Future.delayed(const Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 1));
       if (mounted) {
         Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterCompletePage()));
-        // }
       }
     } catch (e) {
       _showErrorDialog('Failed to register or provision device: $e');

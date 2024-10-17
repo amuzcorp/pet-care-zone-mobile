@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 import 'package:wifi_scan/wifi_scan.dart';
 
 import '../utils/logger.dart';
@@ -13,6 +14,10 @@ class WifiService {
 
   Timer? scanTimer;
   bool isScan = false;
+
+  Future<String> getCurrentSSID() async {
+    return (await WiFiForIoTPlugin.getSSID())!;
+  }
 
   Future<bool> checkPermissions() async {
     PermissionStatus status = await Permission.location.status;

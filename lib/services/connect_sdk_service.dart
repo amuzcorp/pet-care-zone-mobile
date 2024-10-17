@@ -1,9 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 
 class ConnectSdkService {
@@ -21,11 +20,13 @@ class ConnectSdkService {
   final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController.broadcast();
 
   late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
-
+  StreamSubscription? logSubscription;
 
   final List<Map<String, dynamic>> devices = [];
   List<Map<String, dynamic>> bleList = [];
-  List<Map<String, dynamic>> lastDeviceList = [];
+  Map<String, dynamic> matchedWebosDevice = {};
+  List<String> collectedLogs = [];
+
   final String log = "";
   Timer? scanTimer;
   Timer? bleScanTimer;
@@ -44,7 +45,89 @@ class ConnectSdkService {
     yield* bleStreamController.stream;
   }
 
-  Future bleStartScan() async {
+  void setupLogListener() async {
+    logChannel.setMethodCallHandler((MethodCall call) async {
+      final result = call.arguments;
+      logD.i('connectSDK result : $result');
+      try {
+        // JSON 변환 가능 여부 확인
+        final jsonData = jsonDecode(result);
+        logStreamController.add('jsonData : $jsonData');
+
+        /// Set Device ID
+        if (jsonData['payload'] != null && jsonData['payload']['iotDeviceId'] != null) {
+          logStreamController.add('provision 요청 성공 : ${jsonData['payload']['iotDeviceId']}');
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('deviceId', jsonData['payload']['iotDeviceId']);
+          logD.i('Device ID has been set : ${prefs.getString('deviceId')}');
+        } else {
+          logStreamController.add('iotDeviceId is null or payload is missing.');
+        }
+      } catch (e) {
+        logStreamController.add('Error decoding or encoding JSON: $e');
+
+        print("Error decoding or encoding JSON: $e");
+      }
+    });
+  }
+
+  void startLogSubscription(void Function(String data) onData) {
+    logSubscription ??= logStream.listen((data) {
+      collectedLogs.add(data); // 로그를 수집 리스트에 추가
+      onData(data);
+    });
+  }
+
+  void cancelLogSubscription() {
+    logSubscription?.cancel();
+    logSubscription = null;
+  }
+
+  List<String> getAllLogs() {
+    return collectedLogs;
+  }
+
+  findMatchedDevice() {
+    if (bleList.isNotEmpty && devices.isNotEmpty) {
+      final matchedDevice = devices.firstWhere((webOSDevice) {
+        return bleList.any((bleDevice) {
+          return webOSDevice['friendlyName'].trim() == bleDevice['platformName'].trim();
+        });
+      }, orElse: () => {});
+      matchedWebosDevice = matchedDevice;
+    }
+  }
+
+  Future<void> startScan() async {
+    scanTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+      try {
+        logD.i("Scanning...");
+        findMatchedDevice();
+        await channel.invokeMethod('startScan');
+
+      } on PlatformException catch (e) {
+        logD.w("Failed to start scan: '${e.message}'.");
+        await stopScan();
+      }
+    });
+  }
+
+  Future<void> stopScan() async {
+    if (scanTimer != null && scanTimer!.isActive) {
+      scanTimer!.cancel();
+      try {
+        await channel.invokeMethod('stopScan');
+        logD.i("Scan stopped successfully");
+      } on PlatformException catch (e) {
+        logD.w("Failed to stop scan: '${e.message}'.");
+      }
+      logD.i("Scan timer cancelled");
+    } else {
+      logD.w("Scan timer was not active or already cancelled");
+    }
+  }
+
+  Future startBleScan() async {
     bleScanTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       await FlutterBluePlus.startScan(
         androidScanMode: AndroidScanMode.balanced,
@@ -67,7 +150,6 @@ class ConnectSdkService {
               'services': services,
               'scanResult': r,
             };
-            // print('ble data $bleData');
 
             // 중복 확인 및 제거 후 추가
             final existingIndex = bleList.indexWhere((d) => d['remoteId'] == remoteId);
@@ -80,105 +162,17 @@ class ConnectSdkService {
         }
       }
 
-
       if (!bleStreamController.isClosed) {
         bleStreamController.add(List<Map<String, dynamic>>.from(bleList));
       }
 
     });
-    combineStreams();
   }
 
-  Future combineStreams() async {
-    CombineLatestStream.combine2<List<Map<String, dynamic>>, List<Map<String, dynamic>>, List<Map<String, dynamic>>>(
-      bleStream.debounceTime(const Duration(seconds: 2)),
-      deviceStream.debounceTime(const Duration(seconds: 2)),
-          (List<Map<String, dynamic>> bleList, List<Map<String, dynamic>> deviceList) {
-        for (Map<String, dynamic> device in deviceList) {
-          final matchingBleDevices = bleList.where((bleData) => bleData['platformName'] == device['friendlyName']).toList();
-
-          if (matchingBleDevices.isNotEmpty) {
-            final mergedBleDevice = matchingBleDevices.fold<Map<String, dynamic>>({}, (previousValue, element) {
-              return {...previousValue, ...element}; // BLE 데이터 병합
-            });
-            device['bleData'] = mergedBleDevice;
-          }
-        }
-
-        // 병합된 리스트 추가
-        deviceStreamController.add(deviceList);
-        return deviceList;
-      },
-    ).listen((mergedDeviceList) {
-      if (mergedDeviceList.isNotEmpty && !_isSameList(mergedDeviceList, lastDeviceList)) {
-        lastDeviceList = List<Map<String, dynamic>>.from(mergedDeviceList); // 깊은 복사
-        if (!deviceStreamController.isClosed) {
-          print('Added to deviceStreamController: ${mergedDeviceList.length} items');
-          deviceStreamController.add(List<Map<String, dynamic>>.from(mergedDeviceList)); // 깊은 복사
-        } else {
-          print('deviceStreamController is closed, cannot add data');
-        }
-      }
-    }
-    );
-  }
-
-
-  // 리스트 중복 validator
-  bool _isSameList(List<Map<String, dynamic>> newList, List<Map<String, dynamic>> oldList) {
-    if (newList.length != oldList.length) {
-      return false;
-    }
-
-    for (int i = 0; i < newList.length; i++) {
-      if (!mapEquals(newList[i], oldList[i])) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-
-  void setupLogListener() async {
-    logStreamController.add("log stream init");
-    logChannel.setMethodCallHandler((MethodCall call) async {
-      final result = call.arguments;
-      if (result.contains('error')) {
-        print('error result : $result');
-        logStreamController.add(result);
-      } else {
-        logStreamController.add(result);
-      }
-    });
-  }
-
-  Future<void> webOSRequest(uri, payload) async {
-    try {
-      logD.i("webOS request sent!\nuri: $uri\npayload: $payload");
-      await channel.invokeMethod('webOSRequest', {'uri': uri, 'payload': payload});
-    } on PlatformException catch (e) {
-      logD.w("Failed to request '${e.message}'.");
-    }
-  }
-
-  Future<void> startScan() async {
-    scanTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+  Future<void> stopBleScan() async {
+    if (bleScanTimer != null && bleScanTimer!.isActive) {
+      bleScanTimer!.cancel();
       try {
-        logD.i("Scanning started");
-        await channel.invokeMethod('startScan');
-      } on PlatformException catch (e) {
-        logD.w("Failed to start scan: '${e.message}'.");
-        await stopScan();
-      }
-    });
-  }
-
-  Future<void> stopScan() async {
-    if (scanTimer != null && scanTimer!.isActive) {
-      scanTimer!.cancel();
-      try {
-        await channel.invokeMethod('stopScan');
         logD.i("Scan stopped successfully");
       } on PlatformException catch (e) {
         logD.w("Failed to stop scan: '${e.message}'.");
@@ -187,7 +181,6 @@ class ConnectSdkService {
     } else {
       logD.w("Scan timer was not active or already cancelled");
     }
-    bleScanTimer!.cancel();
   }
 
   Future<void> requestParingKey(Map<String, dynamic> device) async {
@@ -218,6 +211,16 @@ class ConnectSdkService {
     }
   }
 
+  Future<void> connectToDevice(Map<String, dynamic> device) async {
+    try {
+      String deviceJson = jsonEncode(device);
+      logD.i("connectToDevice!");
+      await channel.invokeMethod('connectToDevice', {'device': deviceJson});
+    } on PlatformException catch (e) {
+      logD.w("Failed to send pairing key: '${e.message}'.");
+    }
+  }
+
   Future<void> initializeDevice(Map<String, dynamic> device) async {
     try {
       String deviceJson = jsonEncode(device);
@@ -232,6 +235,9 @@ class ConnectSdkService {
     channel.setMethodCallHandler((MethodCall call) async {
       switch (call.method) {
         case "webOSRequest":
+          print('request ${call.arguments}');
+          collectedLogs.add('webOSRequest => ${call.arguments}');
+          logStreamController.add(call.arguments);
           final bool success = call.arguments['success'];
           final String response = call.arguments['response'];
           print("request status: $success, Response: $response");
@@ -240,17 +246,22 @@ class ConnectSdkService {
         case "onDeviceUpdated":
           final device = Map<String, dynamic>.from(call.arguments);
           final deviceIp = device['lastKnownIPAddress'] as String;
+          print('deviceIp $deviceIp');
+          final String friendlyName = device['friendlyName']?.toLowerCase() ?? '';
+          if (friendlyName.contains("pet")) {
+            // 기존에 같은 IP를 가진 기기가 있는지 확인
+            final existingDeviceIndex = devices.indexWhere((d) => d['lastKnownIPAddress'] == deviceIp);
 
-          final existingDeviceIndex = devices.indexWhere((d) => d['lastKnownIPAddress'] == deviceIp);
+            if (existingDeviceIndex == -1) {
+              devices.add(device);
+            } else {
+              devices[existingDeviceIndex] = device;
+            }
 
-          if (existingDeviceIndex == -1) {
-            devices.add(device);
-          } else {
-            devices[existingDeviceIndex] = device;
+            deviceStreamController.add(List<Map<String, dynamic>>.from(devices));
+
+            logD.i('Devices list updated: $devices');
           }
-
-          deviceStreamController.add(List<Map<String, dynamic>>.from(devices));
-          logD.i('Devices list updated: $devices');
           break;
         case "onDeviceRemoved":
           final device = Map<String, dynamic>.from(call.arguments);

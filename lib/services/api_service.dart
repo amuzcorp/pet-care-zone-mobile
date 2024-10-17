@@ -45,7 +45,7 @@ class ApiService {
       }
 
       logD.i('Response: StatusCode=${response.statusCode}, Body=${response.body}');
-      final responseBody = json.decode(response.body);
+      final responseBody = json.decode(utf8.decode(response.bodyBytes));
 
       if (response.statusCode == 200) {
         return responseBody;
