@@ -892,8 +892,14 @@ public class WebOSTVServiceSocketClient extends WebSocketClient implements Servi
         if (isConnected()) {
             String message = packet.toString();
 
-            Log.d(Util.T, "webOS Socket [OUT] : " + message);
+            // 메시지를 Flutter로 전송
+            if (methodChannel != null) {
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    methodChannel.invokeMethod("onMessage", message);
+                });
+            }
 
+            Log.d(Util.T, "webOS Socket [OUT] : " + message);
             this.send(message);
         }
         else {
