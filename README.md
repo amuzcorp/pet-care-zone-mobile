@@ -1,4 +1,4 @@
-vb# Pet Care Zone
+# Pet Care Zone
 
 반려동물 돌봄을 위한 맞춤형 모바일 펫케어 서비스
 
@@ -21,5 +21,4 @@ vb# Pet Care Zone
   - 실시간 스트리밍 홈 캠 : [WebRTC](https://webrtc.org/?hl=ko) , [WebRTC Github](https://github.com/webrtc)
   - 캠 녹화 : [RecordRTC](https://recordrtc.org/)
   - Peer 연결 broker : https://github.com/coturn/coturn
-  - 스타일링 [https://velog.io/@hayoung474/Front-End-복잡한-styled-components-구조-개선해보기](https://velog.io/@hayoung474/Front-End-%EB%B3%B5%EC%9E%A1%ED%95%9C-styled-components-%EA%B5%AC%EC%A1%B0-%EA%B0%9C%EC%84%A0%ED%95%B4%EB%B3%B4%EA%B8%B0)
   - 전역상태: recoil
