@@ -33,7 +33,6 @@ class MyAppState extends State<MyApp> {
     return MaterialApp(
       theme: ThemeData(
         fontFamily: 'LG_Smart_UI',
-        primarySwatch: Colors.blue,
       ),
       home: FutureBuilder<Widget>(
         future: _initialPage,
