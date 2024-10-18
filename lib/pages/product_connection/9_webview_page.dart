@@ -167,10 +167,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
     if (message.message == "deleteDevice") {
       logD.i("Device info deleted. navigate to device register page.");
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('userId', "");
-      prefs.setString('deviceId', "");
-      prefs.setInt('petId', 0);
+      await userService.deleteUserInfo();
       if (mounted) {
         navigator(context, () => const InitialDeviceHomePage());
       }
