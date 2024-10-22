@@ -36,7 +36,7 @@ class _WebViewPageState extends State<WebViewPage> {
   final userService = UserService();
   final deviceService = DeviceService();
   final lunaService = LunaService();
-  String? deviceId = "";
+  String deviceId = "";
   String userId = "";
   int petId = 0;
   bool isSetPetInfo = false;
@@ -76,14 +76,13 @@ class _WebViewPageState extends State<WebViewPage> {
   Future getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     userId = prefs.getString('userId')!;
-    deviceId = prefs.getString('deviceId');
+    deviceId = prefs.getString('deviceId')!;
     petId = prefs.getInt('petId')!;
   }
 
   /// 2. set user info
   Future setUserInfo() async {
     final accessToken = await userService.getAccessToken();
-    print('setUserInfo accesst $accessToken');
     await controller.runJavaScript("""
     localStorage.setItem('accessToken', '$accessToken');
     localStorage.setItem('userId', '$userId');
@@ -105,6 +104,8 @@ class _WebViewPageState extends State<WebViewPage> {
       print('petId $petId');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('petId', petId);
+      await prefs.setString('userId', userId);
+      await prefs.setString('deviceId', deviceId);
 
       /// 3. device에 pet,user info 등록
       await setPetInfo();
@@ -169,7 +170,10 @@ class _WebViewPageState extends State<WebViewPage> {
       logD.i("Device info deleted. navigate to device register page.");
       await userService.deleteUserInfo();
       if (mounted) {
-        navigator(context, () => const InitialDeviceHomePage());
+        return Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const InitialDeviceHomePage()), (route) => false
+        );
       }
     }
     if (message.message == "petId") {

@@ -51,8 +51,6 @@ class LunaService {
     userData['payload']['userId'] = userId;
     userData['payload']['petId'] = petId;
 
-    print('userId: ${userData['payload']['userId']}');
-
     try {
       String payloadString = jsonEncode(userData['payload']);
       final Map<String, dynamic>? payload = jsonDecode(payloadString!);

@@ -19,7 +19,6 @@ class ConnectSdkService {
   final StreamController<String> logStreamController = StreamController<String>.broadcast();
   final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController.broadcast();
 
-  late StreamSubscription<List<ScanResult>> _scanResultsSubscription;
   StreamSubscription? logSubscription;
 
   final List<Map<String, dynamic>> devices = [];
@@ -73,7 +72,7 @@ class ConnectSdkService {
 
   void startLogSubscription(void Function(String data) onData) {
     logSubscription ??= logStream.listen((data) {
-      collectedLogs.add(data); // 로그를 수집 리스트에 추가
+      collectedLogs.add(data);
       onData(data);
     });
   }
@@ -135,7 +134,7 @@ class ConnectSdkService {
       );
     });
 
-    _scanResultsSubscription = FlutterBluePlus.scanResults.listen((results) {
+    FlutterBluePlus.scanResults.listen((results) {
       if (results.isNotEmpty) {
         for (ScanResult r in results) {
           final remoteId = r.device.remoteId;

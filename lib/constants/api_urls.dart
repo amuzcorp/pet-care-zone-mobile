@@ -9,7 +9,6 @@ class ApiUrls {
 
   static const String lunaWifiStatusUrl = 'ssap://com.webos.service.wifi/getstatus';
   static const String getWifiProfileList = 'ssap://com.webos.service.wifi/getprofilelist';
-
   static const Map lunaWifiScan = {
     'uri': 'ssap://com.webos.service.wifi/findnetworks',
     'payload': {"subscribe": true}

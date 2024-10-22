@@ -40,7 +40,7 @@ class UserService {
       );
 
       if (loginInfo != null) {
-        await _saveUserInfo(loginInfo);
+        await saveUserInfo(loginInfo);
         UserModel user = UserModel.fromJson(loginInfo);
 
         _userController.add(user);
@@ -58,7 +58,7 @@ class UserService {
     }
   }
 
-  Future<void> _saveUserInfo(Map<String, dynamic> loginInfo) async {
+  Future<void> saveUserInfo(Map<String, dynamic> loginInfo) async {
     final prefs = await SharedPreferences.getInstance();
     UserModel user = UserModel.fromJson(loginInfo);
 
@@ -71,16 +71,16 @@ class UserService {
   Future<bool> isTokenValid() async {
     final prefs = await SharedPreferences.getInstance();
     final tokenTime = prefs.getInt('tokenTime');
-    // if (tokenTime != null) {
-    //   final currentTime = DateTime.now().millisecondsSinceEpoch;
-    //   final tokenAge = currentTime - tokenTime;
-    //   // if (tokenAge > 0) {
-    //   //   await prefs.remove('accessToken');
-    //   //   await prefs.remove('user');
-    //   //   return false;
-    //   // }
-    //   return true;
-    // }
+    if (tokenTime != null) {
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final tokenAge = currentTime - tokenTime;
+      // if (tokenAge > 0) {
+      //   await prefs.remove('accessToken');
+      //   await prefs.remove('user');
+      //   return false;
+      // }
+      return true;
+    }
     return false;
   }
 

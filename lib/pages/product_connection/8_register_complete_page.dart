@@ -106,12 +106,12 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
               registerDeviceInfo(),
               if (mounted)
                 {
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
                       builder: (context) => WebViewPage(
                         uri: Uri.parse(ApiUrls.webViewUrl),
-                        backPage: const RegisterCompletePage(),
+                        backPage: const InitialDeviceHomePage(),
                       ),
                     ),
                   )

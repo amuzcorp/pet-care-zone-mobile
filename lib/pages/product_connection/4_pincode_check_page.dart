@@ -8,6 +8,7 @@ import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
+import '../../data/models/device_model.dart';
 import '../../services/connect_sdk_service.dart';
 
 class PincodeCheckPage extends StatefulWidget {
@@ -29,6 +30,8 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   }
 
   Future<void> getDeviceInfoAndRequestParingKey() async {
+    await saveWebOSDeviceInfo();
+    await Future.delayed(const Duration(seconds: 2));
     try {
       final deviceInfo = await deviceService.getWebOSDeviceInfo();
       if (deviceInfo != null) {
@@ -40,6 +43,29 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       print('Error fetching device info: $e');
     }
   }
+
+  Future saveWebOSDeviceInfo() async {
+    final matchedWebosDevice = connectSdkService.matchedWebosDevice;
+
+    print('matchedWebosDevice $matchedWebosDevice');
+
+    if (matchedWebosDevice.isNotEmpty) {
+
+      /// DeviceModel 생성
+      final deviceModel = DeviceModel(
+        serialNumber: matchedWebosDevice['modelNumber'],
+        deviceName: matchedWebosDevice['friendlyName'],
+        deviceIp: matchedWebosDevice['lastKnownIPAddress'],
+      );
+
+      /// webOS Whole Data 저장
+      await deviceService.saveWebOSDeviceInfo(matchedWebosDevice);
+
+      /// webOS 필요한 Data 저장
+      await deviceService.saveDeviceInfo(deviceModel);
+    }
+  }
+
 
   @override
   void initState() {

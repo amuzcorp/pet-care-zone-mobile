@@ -22,14 +22,14 @@ class _RegisterPageState extends State<RegisterPage> {
 
   Future navigate() async {
     await Future.delayed(const Duration(seconds: 3));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const RegisterProcessPage()));
-    });
+    if (mounted) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterProcessPage()));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<DeviceModel?>(
+    return FutureBuilder<DeviceModel?> (
       future: deviceService.getDeviceInfo(),
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {

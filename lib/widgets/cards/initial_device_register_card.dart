@@ -4,6 +4,7 @@ import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/icon_constants.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import '../../constants/image_constants.dart';
 import '../../constants/size_constants.dart';
@@ -38,14 +39,7 @@ class InitialDeviceRegisterCard extends StatefulWidget {
 class _InitialDeviceRegisterCardState extends State<InitialDeviceRegisterCard> {
   DeviceService deviceService = DeviceService();
   ConnectSdkService connectSdkService = ConnectSdkService();
-  // Future connectToDevice() async {
-  //   final webOSDeviceInfo = await deviceService.getWebOSDeviceInfo();
-  //   connectSdkService.logStreamController.add("get webos info : $webOSDeviceInfo");
-  //   if (webOSDeviceInfo.isNotEmpty) {
-  //     await deviceService.connectToDevice();
-  //     connectSdkService.logStreamController.add("device connection is completed.");
-  //   }
-  // }
+  LunaService lunaService = LunaService();
 
   @override
   Widget build(BuildContext context) {

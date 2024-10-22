@@ -84,7 +84,7 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
           // Progress bar animated over 3 seconds
           TweenAnimationBuilder<double>(
             tween: Tween<double>(begin: 0, end: 1),
-            duration: const Duration(seconds: 5),
+            duration: const Duration(seconds: 4),
             builder: (context, value, _) {
               return Column(
                 children: [
