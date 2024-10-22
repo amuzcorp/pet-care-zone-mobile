@@ -19,10 +19,10 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
-    List<dynamic> petListFromJson = json['petList'] as List;
+    List<dynamic> petListFromJson = json['petList'] ?? [];
     List<PetModel> petList = petListFromJson.map((pet) => PetModel.fromJson(pet)).toList();
 
-    List<dynamic> deviceListFromJson = json['deviceList'] as List;
+    List<dynamic> deviceListFromJson = json['deviceList'] ?? [];
     List<DeviceModel> deviceList = deviceListFromJson.map((device) => DeviceModel.fromJson(device)).toList();
 
     return UserModel(

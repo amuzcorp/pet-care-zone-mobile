@@ -6,7 +6,6 @@ import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_pag
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/data/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../pages/product_connection/1-2_power_check_page.dart';
 import '../utils/logger.dart';
 
 class UserService {
@@ -41,7 +40,7 @@ class UserService {
       );
 
       if (loginInfo != null) {
-        await _saveUserInfo(loginInfo);
+        await saveUserInfo(loginInfo);
         UserModel user = UserModel.fromJson(loginInfo);
 
         _userController.add(user);
@@ -59,7 +58,7 @@ class UserService {
     }
   }
 
-  Future<void> _saveUserInfo(Map<String, dynamic> loginInfo) async {
+  Future<void> saveUserInfo(Map<String, dynamic> loginInfo) async {
     final prefs = await SharedPreferences.getInstance();
     UserModel user = UserModel.fromJson(loginInfo);
 
@@ -99,6 +98,28 @@ class UserService {
 
   Future<void> deleteUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user');
+    dynamic userData = prefs.getString('user');
+
+    if (userData != null) {
+      try {
+        Map<String, dynamic> userMap = jsonDecode(userData);
+
+        userMap['userInfo']['petList'] = [];
+        userMap['userInfo']['deviceList'] = [];
+
+        String updatedUserData = jsonEncode(userMap);
+        await prefs.setString('user', updatedUserData);
+      } catch (e) {
+        logD.e('Error decoding or updating user data: $e');
+      }
+    }
+
+    await Future.wait([
+      prefs.remove('userId'),
+      prefs.remove('deviceId'),
+      prefs.remove('petId'),
+      prefs.remove('webos_device_info'),
+    ]);
   }
+
 }

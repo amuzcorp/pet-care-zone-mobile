@@ -8,7 +8,6 @@ import 'package:petcarezone/services/connect_sdk_service.dart';
 
 import '../../constants/image_constants.dart';
 import '../../constants/size_constants.dart';
-import '../../data/models/device_model.dart';
 import '../../services/device_service.dart';
 import '../../services/wifi_service.dart';
 import '../../utils/logger.dart';
@@ -32,13 +31,14 @@ class _DeviceListState extends State<DeviceList> {
 
   Future<void> bleConnectToDevice(BluetoothDevice device) async {
     print('bleConnectToDevice $device');
-    try {
-      await device.disconnect();
-      await device.connect();
-      print('Device connected: $device');
-    } catch (e) {
-      await device.connect();
-      print("Error connecting to device: $e");
+    if (device.isDisconnected) {
+      try {
+        await device.connect();
+        print('Device connected: $device');
+      } catch (e) {
+        await device.connect();
+        print("Error connecting to device: $e");
+      }
     }
   }
 

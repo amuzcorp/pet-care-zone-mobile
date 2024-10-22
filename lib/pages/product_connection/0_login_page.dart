@@ -53,18 +53,18 @@ class _LoginPageState extends State<LoginPage> {
       showAppBar: false,
       backgroundColor: ColorConstants.pageBG,
       leadingHeight: 180.0,
+      contentWidget: LoginInput(
+        emailController: _emailController,
+        passwordController: _passwordController,
+        formKey: _formKey,
+        loginError: _loginError,
+      ),
       bottomButton: BasicButton(
         text: "로그인",
         fontColor: ColorConstants.white,
         width: double.infinity,
         backgroundColor: ColorConstants.teal,
         apiCall: _handleLogin,
-      ),
-      contentWidget: LoginInput(
-        emailController: _emailController,
-        passwordController: _passwordController,
-        formKey: _formKey,
-        loginError: _loginError, // 에러 메시지 전달
       ),
     );
   }

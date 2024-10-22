@@ -77,12 +77,17 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    validateUserInfo();
+  }
+
+  @override
   void initState() {
     super.initState();
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
     connectToDevice();
-    validateUserInfo();
   }
 
   @override

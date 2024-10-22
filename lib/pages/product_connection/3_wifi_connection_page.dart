@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,7 +13,6 @@ import 'package:petcarezone/services/message_service.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
-import '../../data/models/device_model.dart';
 import '../../services/luna_service.dart';
 import '../../services/wifi_service.dart';
 import '../../utils/logger.dart';
@@ -38,7 +36,8 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final MessageService messageService = MessageService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final TextEditingController passwordController = TextEditingController();
-  final LayerLink layerLink = LayerLink();
+  final LayerLink _layerLink = LayerLink();
+
 
   late StreamController<String> messageController;
 
@@ -49,7 +48,56 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   String selectedSecurityType = "";
   String password = "";
   bool isLoading = false;
+  bool _isDropdownOpen = false;
+
   BluetoothCharacteristic? targetCharacteristic;
+
+  OverlayEntry? _overlayEntry;
+
+  void _openDropdown(List<Map<String, String>> wifiInfos) {
+    if (!_isDropdownOpen) {
+      _overlayEntry = _createDropdown(wifiInfos);
+      Overlay.of(context)?.insert(_overlayEntry!);
+      setState(() {
+        _isDropdownOpen = true;
+      });
+    }
+  }
+
+  // 드롭다운 닫기
+  void _closeDropdown() {
+    _overlayEntry?.remove();
+    setState(() {
+      _isDropdownOpen = false;
+    });
+  }
+
+  OverlayEntry _createDropdown(List<Map<String, String>> wifiInfos) {
+    return OverlayEntry(
+      builder: (context) {
+        return Positioned(
+          width: MediaQuery.of(context).size.width - 40,
+          height: MediaQuery.of(context).size.height * 0.4,
+          child: CompositedTransformFollower(
+            link: _layerLink,
+            offset: const Offset(0, 60),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(SizeConstants.borderSize),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(SizeConstants.borderSize),
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: _buildDropdownItems(wifiInfos),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void didChangeDependencies() {
@@ -102,13 +150,13 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
           widgetPasswordField(),
           boxH(16),
           Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                isLoading ? const GradientCircularLoader() : Container(),
-                errorStreamBuilder(),
-              ],
-            )
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  isLoading ? const GradientCircularLoader() : Container(),
+                  errorStreamBuilder(),
+                ],
+              )
           ),
           boxH(16),
         ],
@@ -118,6 +166,56 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
         onPressed: connectToWifi,
       ),
     );
+  }
+
+  List<Widget> _buildDropdownItems(List<Map<String, String>> wifiInfos) {
+    List<Widget> items = [];
+
+    for (int i = 0; i < wifiInfos.length; i++) {
+      BorderRadius borderRadius = BorderRadius.zero;
+
+      if (i == 0) {
+        // 첫 번째 타일의 위쪽 모서리에만 borderRadius 적용
+        borderRadius = const BorderRadius.only(
+          topLeft: Radius.circular(10.0),
+          topRight: Radius.circular(10.0),
+        );
+      } else if (i == wifiInfos.length - 1) {
+        // 마지막 타일의 아래쪽 모서리에만 borderRadius 적용
+        borderRadius = const BorderRadius.only(
+          bottomLeft: Radius.circular(10.0),
+          bottomRight: Radius.circular(10.0),
+        );
+      }
+
+      items.add(
+        ClipRRect(
+          borderRadius: borderRadius,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: () {
+              setState(() {
+                selectedWifi = wifiInfos[i]['SSID'] ?? '';
+                _closeDropdown();
+              });
+            },
+              child: ListTile(
+                title: Text(
+                  wifiInfos[i]['SSID'] ?? 'Wi-Fi Scanning...',
+                  style: const TextStyle(fontSize: 14),
+                ),
+              ),
+          ),
+        ),
+      );
+
+      // 마지막 아이템 뒤에는 Divider를 추가하지 않도록 조건을 설정
+      if (i < wifiInfos.length - 1) {
+        items.add(const Divider(height: 0));
+      }
+    }
+
+    return items;
   }
 
   Widget errorStreamBuilder() {
@@ -136,54 +234,42 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       builder: (context, snapshot) {
         List<Map<String, String>> wifiInfos = snapshot.data ?? [];
         print('wifiInfos $wifiInfos');
-        if (wifiInfos.isNotEmpty) {
-          final firstSsid = wifiInfos[0]['SSID'] ?? "";
-          final firstSecurityType = wifiInfos[0]['securityType']?.toLowerCase().contains("");
 
-          if (selectedWifi.isEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              setState(() {
-                selectedWifi = firstSsid;
-              });
+        if (wifiInfos.isNotEmpty && selectedWifi.isEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            setState(() {
+              selectedWifi = wifiInfos[0]['SSID'] ?? "";
             });
-          }
+          });
         }
 
         return CompositedTransformTarget(
-          link: LayerLink(),
-          child: DropdownButtonFormField<String>(
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: ColorConstants.white,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(SizeConstants.borderSize),
-                borderSide: BorderSide(
-                  color: ColorConstants.border,
-                  width: SizeConstants.borderWidth,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(SizeConstants.borderSize),
-                borderSide: BorderSide(
-                  color: ColorConstants.activeBorder,
-                  width: SizeConstants.borderWidth,
-                ),
-              ),
-              counterText: "",
-            ),
-            value: wifiInfos.any((wifi) => wifi['SSID'] == selectedWifi) ? selectedWifi : null,
-            hint: Text(wifiInfos.isNotEmpty ? wifiInfos[0]['SSID'] ?? "Wi-Fi Scanning..." : "Wi-Fi Scanning..."),
-            items: wifiInfos.map((wifi) {
-              return DropdownMenuItem<String>(
-                value: wifi['SSID'],
-                child: Text(wifi['SSID'] ?? ''),
-              );
-            }).toList(),
-            onChanged: (String? newValue) {
-              setState(() {
-                selectedWifi = newValue ?? '';
-              });
+          link: _layerLink,
+          child: GestureDetector(
+            onTap: () {
+              if (_isDropdownOpen) {
+                _closeDropdown();
+              } else {
+                _openDropdown(wifiInfos);
+              }
             },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 16.0),
+              decoration: BoxDecoration(
+                color: ColorConstants.white,
+                borderRadius: BorderRadius.circular(SizeConstants.borderSize),
+                border: Border.all(color: ColorConstants.border, width: SizeConstants.borderWidth),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    selectedWifi.isEmpty ? 'Wi-Fi Scanning...' : selectedWifi
+                  ),
+                  Icon(_isDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -228,7 +314,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   }
 
   Future<void> connectToWifi() async {
-    // if (!mounted) return;
     if (!await checkWifiConnection()) return;
     if (!checkPassword()) return;
     if (bleService.connectedDevice == null) {
@@ -242,49 +327,13 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
-      await getWebosDeviceInfoAndNavigate();
+      await navigateToPincodeCheckPage();
     } catch (e) {
       errorListener(e);
     } finally {
       setState(() {
         isLoading = false;
       });
-    }
-  }
-
-  errorListener(error) async {
-    String bleErrorText = e.toString().toLowerCase();
-    if (bleErrorText.contains('disconnect')) {
-      messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
-    } else {
-      messageController.add('에러가 발생했어요. $error');
-    }
-  }
-
-  Future getWebosDeviceInfoAndNavigate() async {
-    await Future.delayed(const Duration(seconds: 4));
-    final matchedWebosDevice = connectSdkService.matchedWebosDevice;
-
-    print('matchedWebosDevice $matchedWebosDevice');
-
-    if (matchedWebosDevice.isNotEmpty) {
-      messageController.add('');
-
-      /// DeviceModel 생성
-      final deviceModel = DeviceModel(
-        serialNumber: matchedWebosDevice['modelNumber'],
-        deviceName: matchedWebosDevice['friendlyName'],
-        deviceIp: matchedWebosDevice['lastKnownIPAddress'],
-      );
-
-      /// webOS Whole Data 저장
-      await deviceService.saveWebOSDeviceInfo(matchedWebosDevice);
-
-      /// webOS 필요한 Data 저장
-      await deviceService.saveDeviceInfo(deviceModel);
-      navigateToPincodeCheckPage();
-    } else {
-      messageController.add('webOS 기기 연결이 되지 않았어요.\n연결하기 버튼을 한번 더 눌러주세요.');
     }
   }
 
@@ -296,6 +345,17 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       return false;
     }
     return true;
+  }
+
+  errorListener(error) async {
+    String bleErrorText = e.toString().toLowerCase();
+    if (bleErrorText.contains('disconnect')) {
+      messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
+    } else if (bleErrorText.contains('fbp-code: 6')) {
+      messageController.add('BLE 연결이 끊어졌어요. BLE를 먼저 활성화 해주세요.');
+    } else {
+      messageController.add('에러가 발생했어요. $error');
+    }
   }
 
   bool checkPassword() {

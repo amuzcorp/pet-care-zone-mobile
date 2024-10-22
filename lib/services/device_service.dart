@@ -63,6 +63,11 @@ class DeviceService {
     }
   }
 
+  Future deleteWebOSDeviceInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.remove('webos_device_info');
+  }
+
   Future<Map<String, dynamic>> getWebOSDeviceInfo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
