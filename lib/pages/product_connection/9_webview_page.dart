@@ -17,7 +17,6 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
-import '../../widgets/navigator/navigator.dart';
 
 class WebViewPage extends StatefulWidget {
   const WebViewPage({super.key, required this.uri, this.backPage});
@@ -172,6 +171,9 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
+  var isShowBottomSheet = false;
+  var isShowSubBottomSheet = false;
+
   Future jsChannelListener(message) async {
     if (message.message.startsWith('data:image/png')) {
       return await saveFile(message.message, 'png');
@@ -185,8 +187,9 @@ class _WebViewPageState extends State<WebViewPage> {
       if (mounted) {
         return Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const InitialDeviceHomePage()), (route) => false
-        );
+            MaterialPageRoute(
+                builder: (context) => const InitialDeviceHomePage()),
+            (route) => false);
       }
     }
     if (message.message == "petId") {
@@ -196,6 +199,24 @@ class _WebViewPageState extends State<WebViewPage> {
     if (message.message == "backButtonClicked") {
       logD.i("Back button clicked in WebView");
       backPageNavigator();
+      return;
+    }
+
+    if (message.message == "showBottomSheet") {
+      isShowBottomSheet = true;
+      return;
+    }
+    if (message.message == "showSubBottomSheet") {
+      isShowSubBottomSheet = true;
+      return;
+    }
+
+    if (message.message == "closeBottomSheet") {
+      isShowBottomSheet = false;
+      return;
+    }
+    if (message.message == "closeSubBottomSheet") {
+      isShowSubBottomSheet = false;
       return;
     }
 
@@ -232,6 +253,15 @@ class _WebViewPageState extends State<WebViewPage> {
       if (currentUrl == null) {
         return true;
       }
+      if (isShowSubBottomSheet) {
+        controller.runJavaScript("closeSubBottomSheetAtFlutter();");
+        return false;
+      }
+      if (isShowBottomSheet) {
+        controller.runJavaScript("closeBottomSheetAtFlutter();");
+        return false;
+      }
+
       if (currentUrl.contains('/home') ||
           currentUrl.contains('/profile/register') ||
           currentUrl.contains('/timeline') ||
