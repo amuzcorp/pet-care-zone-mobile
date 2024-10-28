@@ -33,8 +33,7 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> {
-  static const MethodChannel _channel =
-      MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late MqttServerClient client;
   final WebViewController controller = WebViewController();
   late final PlatformWebViewControllerCreationParams params;
@@ -47,6 +46,8 @@ class _WebViewPageState extends State<WebViewPage> {
   int petId = 0;
   bool isSubscribed = false;
   bool isSetPetInfo = false;
+  bool isShowBottomSheet = false;
+  bool isShowSubBottomSheet = false;
 
   Future mqttInit() async {
     client = MqttServerClient(
@@ -55,8 +56,7 @@ class _WebViewPageState extends State<WebViewPage> {
     );
 
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey =
-        await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -95,8 +95,7 @@ class _WebViewPageState extends State<WebViewPage> {
       final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
       final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
 
-      logD.i(
-          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
 
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
@@ -118,39 +117,18 @@ class _WebViewPageState extends State<WebViewPage> {
     if (topic == "iot/petcarezone/topic/states/${deviceId}") {
       controller.runJavaScript("handleStateTopicEvent($pt);");
     }
-    logD.i(
-        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
   /// Indicate the notification is correct
 
   Future webViewInit() async {
-    await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
-    await controller.setNavigationDelegate(
-      NavigationDelegate(
-        onPageStarted: (String url) {
-          userInfoInit();
-        },
-      ),
-    );
-    await controller.addJavaScriptChannel(
-      'Flutter',
-      onMessageReceived: (JavaScriptMessage message) async {
-        await jsChannelListener(message);
-      },
-    );
-
-    await controller.loadRequest(
-      Uri.parse(ApiUrls.webViewUrl),
-    );
-
     final platformController = controller.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
           // request location permission
-          final locationPermissionStatus =
-              await Permission.locationWhenInUse.request();
+          final locationPermissionStatus = await Permission.locationWhenInUse.request();
 
           // return the response
           return GeolocationPermissionsResponse(
@@ -166,8 +144,7 @@ class _WebViewPageState extends State<WebViewPage> {
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i(
-        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   /// 1. get user info
@@ -192,8 +169,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// 3. pet id check
   Future<void> trackPetId() async {
-    final petIdFromLocalStorage = await controller
-        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
     /// 2. petId 있는 경우
@@ -220,22 +196,13 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   Future getLocalStorageValues() async {
-    final accessToken = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('accessToken')");
-    final userId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('userId')");
-    final petId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('petId')");
-    final deviceId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('deviceId')");
-    logD.i(
-        'Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
+    final accessToken = await controller.runJavaScriptReturningResult("localStorage.getItem('accessToken')");
+    final userId = await controller.runJavaScriptReturningResult("localStorage.getItem('userId')");
+    final petId = await controller.runJavaScriptReturningResult("localStorage.getItem('petId')");
+    final deviceId = await controller.runJavaScriptReturningResult("localStorage.getItem('deviceId')");
+    logD.i('Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
 
-    if (petId is String &&
-        petId.isNotEmpty &&
-        deviceId is String &&
-        deviceId.isNotEmpty) {
-      print('mqttSubscribe 구독');
+    if (petId is String && petId.isNotEmpty && deviceId is String && deviceId.isNotEmpty) {
       await setPetInfo();
       await mqttSubscribe();
     }
@@ -257,8 +224,7 @@ class _WebViewPageState extends State<WebViewPage> {
         await folder.create(recursive: true);
       }
 
-      final filePath =
-          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -273,8 +239,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  var isShowBottomSheet = false;
-  var isShowSubBottomSheet = false;
+
 
   Future jsChannelListener(message) async {
     if (message.message.startsWith('data:image/png')) {
@@ -342,7 +307,6 @@ class _WebViewPageState extends State<WebViewPage> {
     final XFile? pickedFile = await picker.pickImage(source: imageSource);
     if (pickedFile != null) {
       final Uint8List bytes = await pickedFile.readAsBytes();
-      // final String base64 = base64Encode(bytes);
 
       img.Image? originalImage = img.decodeImage(bytes);
       if (originalImage != null) {
@@ -350,8 +314,7 @@ class _WebViewPageState extends State<WebViewPage> {
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         // Base64로 변환합니다.
         String? base64String = base64Encode(compressedBytes);
-        controller.runJavaScript(
-            'window.changeFile("data:image/jpeg;base64,$base64String")');
+        controller.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -409,8 +372,7 @@ class _WebViewPageState extends State<WebViewPage> {
           }
         }
       } else {
-        controller.runJavaScript(
-            "if (window.location.pathname !== '/') { window.history.back(); }");
+        controller.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
       }
       return false;
     }
@@ -457,7 +419,8 @@ class _WebViewPageState extends State<WebViewPage> {
                 ),
               )
             ],
-          )),
+          ),
+      ),
     );
   }
 }
