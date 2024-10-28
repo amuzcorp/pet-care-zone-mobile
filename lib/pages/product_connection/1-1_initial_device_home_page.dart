@@ -46,7 +46,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     }
   }
 
-
   Future<void> validateUserInfo() async {
     UserModel? userInfo = await userService.getUserInfo();
     if (userInfo != null) {

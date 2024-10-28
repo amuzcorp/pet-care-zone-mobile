@@ -327,6 +327,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
+      await Future.delayed(const Duration(seconds: 5));
       await navigateToPincodeCheckPage();
     } catch (e) {
       errorListener(e);
@@ -352,7 +353,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     if (bleErrorText.contains('disconnect')) {
       messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
     } else if (bleErrorText.contains('fbp-code: 6')) {
-      messageController.add('BLE 연결이 끊어졌어요. BLE를 먼저 활성화 해주세요.');
+      messageController.add('블루투스 연결이 끊어졌어요. 제품의 블루투스를 먼저 켜주세요.');
     } else {
       messageController.add('에러가 발생했어요. $error');
     }
