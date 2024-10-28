@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
@@ -17,7 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-import 'package:image/image.dart' as img;
+
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 
@@ -349,7 +350,6 @@ class _WebViewPageState extends State<WebViewPage> {
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         // Base64로 변환합니다.
         String? base64String = base64Encode(compressedBytes);
-        controller.runJavaScript("closeSubBottomSheetAtFlutter();");
         controller.runJavaScript(
             'window.changeFile("data:image/jpeg;base64,$base64String")');
       }
