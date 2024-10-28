@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,7 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
-
+import 'package:image/image.dart' as img;
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 
@@ -320,8 +321,38 @@ class _WebViewPageState extends State<WebViewPage> {
       return;
     }
 
+    if (message.message == "openGallery") {
+      _getImage(ImageSource.gallery);
+      return;
+    }
+
+    if (message.message == "openCamera") {
+      _getImage(ImageSource.camera);
+      return;
+    }
+
     if (message.message.startsWith("tel:")) {
       _makePhoneCall(message.message);
+    }
+  }
+
+  Future<void> _getImage(ImageSource imageSource) async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(source: imageSource);
+    if (pickedFile != null) {
+      final Uint8List bytes = await pickedFile.readAsBytes();
+      // final String base64 = base64Encode(bytes);
+
+      img.Image? originalImage = img.decodeImage(bytes);
+      if (originalImage != null) {
+        img.Image resizedImage = img.copyResize(originalImage, width: 500);
+        List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
+        // Base64로 변환합니다.
+        String? base64String = base64Encode(compressedBytes);
+        controller.runJavaScript("closeSubBottomSheetAtFlutter();");
+        controller.runJavaScript(
+            'window.changeFile("data:image/jpeg;base64,$base64String")');
+      }
     }
   }
 
