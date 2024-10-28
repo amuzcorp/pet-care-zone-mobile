@@ -4,6 +4,8 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:mqtt5_client/mqtt5_client.dart';
+import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
@@ -17,7 +19,6 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
-import '../../widgets/navigator/navigator.dart';
 
 class WebViewPage extends StatefulWidget {
   const WebViewPage({super.key, required this.uri, this.backPage});
@@ -30,9 +31,9 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> {
-  static const MethodChannel _channel =
-      MethodChannel("com.lge.petcarezone/media");
-  late final WebViewController controller;
+  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
+  late MqttServerClient client;
+  final WebViewController controller = WebViewController();
   late final PlatformWebViewControllerCreationParams params;
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final userService = UserService();
@@ -41,24 +42,92 @@ class _WebViewPageState extends State<WebViewPage> {
   String deviceId = "";
   String userId = "";
   int petId = 0;
+  bool isSubscribed = false;
   bool isSetPetInfo = false;
 
+  Future mqttInit() async {
+    client = MqttServerClient(
+      'axjobfp4mqj2j-ats.iot.ap-northeast-2.amazonaws.com',
+      'clientIdentifier',
+    );
+
+    final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
+    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
+    final rootCA = await rootBundle.load('assets/data/root-CA.crt');
+
+    final context = SecurityContext(withTrustedRoots: false);
+    context.useCertificateChainBytes(claimCert.buffer.asUint8List());
+    context.usePrivateKeyBytes(claimPrivateKey.buffer.asUint8List());
+    context.setTrustedCertificatesBytes(rootCA.buffer.asUint8List());
+
+    try {
+      client
+        ..useWebSocket = false
+        ..port = 8883
+        ..secure = true
+        ..securityContext = context;
+    } catch (e) {
+      logD.e('Error loading certificates: $e');
+    }
+  }
+
+  Future mqttSubscribe() async {
+    try {
+      await client.connect();
+      if (client.connectionStatus?.state == MqttConnectionState.connected) {
+        logD.i('AWS IoT에 연결됨');
+        subscribe();
+      } else {
+        logD.e('AWS IoT에 연결 실패');
+      }
+    } catch (e) {
+      logD.e('Error: $e');
+      client.disconnect();
+    }
+  }
+
+  void subscribe() {
+    if (!isSubscribed) {
+      final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
+      final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
+
+      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+
+      client.subscribe(stateTopic, MqttQos.atLeastOnce);
+      client.subscribe(eventTopic, MqttQos.atLeastOnce);
+
+      isSubscribed = true;
+    } else {
+      logD.i('Already subscribed to MQTT topics.');
+    }
+  }
+
   Future webViewInit() async {
-    params = const PlatformWebViewControllerCreationParams();
-    controller = WebViewController.fromPlatformCreationParams(
-      params,
-      onPermissionRequest: (WebViewPermissionRequest request) {
-        request.grant();
+    await controller.setJavaScriptMode(JavaScriptMode.unrestricted);
+    await controller.setNavigationDelegate(
+      NavigationDelegate(
+        onPageStarted: (String url) {
+          userInfoInit();
+        },
+      ),
+    );
+    await controller.addJavaScriptChannel(
+      'Flutter',
+      onMessageReceived: (JavaScriptMessage message) async {
+        await jsChannelListener(message);
       },
     );
-    final platformController = controller.platform;
 
+    await controller.loadRequest(
+      Uri.parse(ApiUrls.webViewUrl),
+    );
+
+    final platformController = controller.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
           // request location permission
-          final locationPermissionStatus =
-              await Permission.locationWhenInUse.request();
+          final locationPermissionStatus = await Permission.locationWhenInUse.request();
 
           // return the response
           return GeolocationPermissionsResponse(
@@ -68,13 +137,13 @@ class _WebViewPageState extends State<WebViewPage> {
         },
       );
     }
+    await mqttInit();
   }
 
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i(
-        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   /// 1. get user info
@@ -99,16 +168,13 @@ class _WebViewPageState extends State<WebViewPage> {
 
   /// 3. pet id check
   Future<void> trackPetId() async {
-    final petIdFromLocalStorage = await controller
-        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
-    print('petIdStr $petIdStr');
 
     /// 2. petId 있는 경우
-    if (petIdStr.isNotEmpty) {
+    if (petIdStr != '0' && petIdStr.isNotEmpty) {
       logD.i('PetId updated to $petIdStr, stopping tracking.');
       petId = int.tryParse(petIdStr)!;
-      print('petId $petId');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('petId', petId);
       await prefs.setString('userId', userId);
@@ -116,6 +182,7 @@ class _WebViewPageState extends State<WebViewPage> {
 
       /// 3. device에 pet,user info 등록
       await setPetInfo();
+      await mqttSubscribe();
     } else {
       logD.e('Pet id 없음.');
     }
@@ -128,16 +195,17 @@ class _WebViewPageState extends State<WebViewPage> {
   }
 
   Future getLocalStorageValues() async {
-    final accessToken = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('accessToken')");
-    final userId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('userId')");
-    final petId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('petId')");
-    final deviceId = await controller
-        .runJavaScriptReturningResult("localStorage.getItem('deviceId')");
-    logD.i(
-        'Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
+    final accessToken = await controller.runJavaScriptReturningResult("localStorage.getItem('accessToken')");
+    final userId = await controller.runJavaScriptReturningResult("localStorage.getItem('userId')");
+    final petId = await controller.runJavaScriptReturningResult("localStorage.getItem('petId')");
+    final deviceId = await controller.runJavaScriptReturningResult("localStorage.getItem('deviceId')");
+    logD.i('Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
+
+    if (petId is String && petId.isNotEmpty && deviceId is String && deviceId.isNotEmpty) {
+      print('mqttSubscribe 구독');
+      await setPetInfo();
+      await mqttSubscribe();
+    }
   }
 
   Future<void> saveFile(String dataURL, String format) async {
@@ -156,8 +224,7 @@ class _WebViewPageState extends State<WebViewPage> {
         await folder.create(recursive: true);
       }
 
-      final filePath =
-          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -248,8 +315,7 @@ class _WebViewPageState extends State<WebViewPage> {
           }
         }
       } else {
-        controller.runJavaScript(
-            "if (window.location.pathname !== '/') { window.history.back(); }");
+        controller.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
       }
       return false;
     }
