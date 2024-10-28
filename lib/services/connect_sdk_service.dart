@@ -51,7 +51,7 @@ class ConnectSdkService {
       try {
         // JSON 변환 가능 여부 확인
         final jsonData = jsonDecode(result);
-        logStreamController.add('jsonData : $jsonData');
+        logStreamController.add('connectSDK jsonData : $jsonData');
 
         /// Set Device ID
         if (jsonData['payload'] != null && jsonData['payload']['iotDeviceId'] != null) {
@@ -59,12 +59,9 @@ class ConnectSdkService {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('deviceId', jsonData['payload']['iotDeviceId']);
           logD.i('Device ID has been set : ${prefs.getString('deviceId')}');
-        } else {
-          logStreamController.add('iotDeviceId is null or payload is missing.');
         }
       } catch (e) {
         logStreamController.add('Error decoding or encoding JSON: $e');
-
         print("Error decoding or encoding JSON: $e");
       }
     });
