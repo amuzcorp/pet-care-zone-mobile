@@ -1,8 +1,9 @@
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:petcarezone/services/firebase_service.dart';
 
 class PermissionCheck {
-  // 권한 요청 완료 여부를 저장하는 플래그
+  FirebaseService firebaseService = FirebaseService();
   bool isPermissionGranted = false;
 
   // 필요한 권한들을 리스트로 관리
@@ -14,6 +15,7 @@ class PermissionCheck {
     Permission.bluetoothAdvertise,
     Permission.bluetoothScan,
     Permission.bluetooth,
+    Permission.notification
   ];
 
   // 전체 권한 요청 및 상태 확인 함수
@@ -28,6 +30,7 @@ class PermissionCheck {
       // 3. 모든 권한이 허용되었는지 확인
       if (await _areAllPermissionsGranted()) {
         isPermissionGranted = true;
+        firebaseService.fcmRequestPermission();
         print("모든 권한이 허용되었습니다.");
       } else {
         print("일부 권한이 허용되지 않았습니다.");
