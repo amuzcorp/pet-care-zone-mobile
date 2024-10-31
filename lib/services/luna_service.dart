@@ -54,9 +54,6 @@ class LunaService {
     try {
       String payloadString = jsonEncode(userData['payload']);
       final Map<String, dynamic>? payload = jsonDecode(payloadString!);
-      print('Decoded payload: $payload');
-
-      print('lunaRegisterUserProfile $payload');
 
       webOSRequest(uri, payload);
     } catch (e) {

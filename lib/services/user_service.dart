@@ -6,6 +6,7 @@ import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_pag
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/data/models/user_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 import '../utils/logger.dart';
 
 class UserService {
@@ -59,11 +60,14 @@ class UserService {
   }
 
   Future<void> saveUserInfo(Map<String, dynamic> loginInfo) async {
+    Uuid uuid = const Uuid();
+
     final prefs = await SharedPreferences.getInstance();
     UserModel user = UserModel.fromJson(loginInfo);
 
     await prefs.setString('accessToken', user.accessToken);
     await prefs.setString('user', jsonEncode(loginInfo));
+    await prefs.setString('uuid', uuid.v4());
 
     await prefs.setInt('tokenTime', DateTime.now().millisecondsSinceEpoch);
   }
@@ -79,7 +83,7 @@ class UserService {
       //   await prefs.remove('user');
       //   return false;
       // }
-      return true;
+      // return true;
     }
     return false;
   }
@@ -94,6 +98,26 @@ class UserService {
       return user;
     }
     return null;
+  }
+
+  Future<void> saveLocalPetInfo(Map<String, dynamic> petInfo) async {
+    final prefs = await SharedPreferences.getInstance();
+    dynamic userData = prefs.getString('user');
+
+    if (userData != null) {
+      try {
+        Map<String, dynamic> userMap = jsonDecode(userData);
+        userMap['petList'].add(petInfo);
+
+        String updatedUserData = jsonEncode(userMap);
+        logD.e('updatedUserData $updatedUserData');
+        await prefs.setString('user', updatedUserData);
+      } catch (e) {
+        logD.e('Error decoding or updating user data: $e');
+      }
+    } else {
+      logD.w('No existing user data found in SharedPreferences.');
+    }
   }
 
   Future<void> deleteUserInfo() async {

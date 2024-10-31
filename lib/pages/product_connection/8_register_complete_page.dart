@@ -34,21 +34,21 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
     final webOSDeviceInfo = await deviceService.getWebOSDeviceInfo();
     modelNumber = webOSDeviceInfo['modelNumber'];
     deviceId = prefs.getString("deviceId")!;
-    print('8 deviceId $deviceId');
   }
 
   Future registerDeviceInfo() async {
-    print('deviceId $deviceId\n deviceName $deviceName\n modelNumber $modelNumber');
     if (deviceId.isNotEmpty && deviceName.isNotEmpty && modelNumber.isNotEmpty) {
+      final deviceInfo = DeviceModel(deviceId: deviceId, serialNumber: modelNumber, deviceName: deviceName);
       await deviceService.registerDevice(
         deviceId,
         deviceName,
         modelNumber,
       );
-
       await deviceService.provisionDevice(
         deviceId!,
       );
+      await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
+
     } else {
       guideMessage = '제품 정보를 먼저 등록해 주세요.';
     }
@@ -58,7 +58,6 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
     setState(() {
       deviceName = newName;
     });
-    print('deviceName $deviceName');
   }
 
   @override

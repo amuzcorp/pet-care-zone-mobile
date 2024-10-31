@@ -11,6 +11,7 @@ import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
+import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/user_service.dart';
@@ -21,6 +22,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
+import '../../widgets/indicator/indicator.dart';
 
 class WebViewPage extends StatefulWidget {
   const WebViewPage({super.key, required this.uri, this.backPage});
@@ -32,105 +34,75 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> {
+class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
-  late MqttServerClient client;
+  late final Widget webViewWidget;
+  late final MqttServerClient client;
   final WebViewController controller = WebViewController();
-  late final PlatformWebViewControllerCreationParams params;
-  final ConnectSdkService connectSdkService = ConnectSdkService();
+  final connectSdkService = ConnectSdkService();
   final userService = UserService();
   final deviceService = DeviceService();
   final lunaService = LunaService();
+  final apiService = ApiService();
   String deviceId = "";
   String userId = "";
+  String stateTopic = "";
+  String eventTopic = "";
+
   int petId = 0;
-  bool isSubscribed = false;
-  bool isSetPetInfo = false;
+  bool isWebViewWidgetInitialized = false;
+  bool isDisposed = false;
+  bool isWebViewActive = true;
   bool isShowBottomSheet = false;
   bool isShowSubBottomSheet = false;
 
-  Future mqttInit() async {
-    client = MqttServerClient(
-      'axjobfp4mqj2j-ats.iot.ap-northeast-2.amazonaws.com',
-      'clientIdentifier',
-    );
-
-    final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
-    final rootCA = await rootBundle.load('assets/data/root-CA.crt');
-
-    final context = SecurityContext(withTrustedRoots: false);
-    context.useCertificateChainBytes(claimCert.buffer.asUint8List());
-    context.usePrivateKeyBytes(claimPrivateKey.buffer.asUint8List());
-    context.setTrustedCertificatesBytes(rootCA.buffer.asUint8List());
-
-    try {
-      client
-        ..useWebSocket = false
-        ..port = 8883
-        ..secure = true
-        ..securityContext = context;
-    } catch (e) {
-      logD.e('Error loading certificates: $e');
-    }
-  }
-
-  Future mqttSubscribe() async {
-    try {
-      await client.connect();
-      if (client.connectionStatus?.state == MqttConnectionState.connected) {
-        logD.i('AWS IoT에 연결됨');
-        subscribe();
-      } else {
-        logD.e('AWS IoT에 연결 실패');
-      }
-    } catch (e) {
-      logD.e('Error: $e');
-      client.disconnect();
-    }
-  }
-
-  void subscribe() {
-    if (!isSubscribed) {
-      final stateTopic = 'iot/petcarezone/topic/states/$deviceId';
-      final eventTopic = 'iot/petcarezone/topic/events/$deviceId';
-
-      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
-
-      client.subscribe(stateTopic, MqttQos.atLeastOnce);
-      client.subscribe(eventTopic, MqttQos.atLeastOnce);
-      client.updates.listen(onMessageReceived);
-      isSubscribed = true;
+  Widget buildWebViewWidget() {
+    if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      return WebViewWidget.fromPlatformCreationParams(
+        params: AndroidWebViewWidgetCreationParams(
+          controller: controller.platform,
+          displayWithHybridComposition: true,
+        ),
+      );
     } else {
-      logD.i('Already subscribed to MQTT topics.');
+      return WebViewWidget(controller: controller);
     }
   }
 
-  void onMessageReceived(List<MqttReceivedMessage<MqttMessage>> c) {
-    final recMess = c[0].payload as MqttPublishMessage;
-    final pt = MqttUtilities.bytesToStringAsString(recMess.payload.message!);
-
-    final topic = c[0].topic;
-    if (topic == "iot/petcarezone/topic/events/${deviceId}") {
-      controller.runJavaScript("handleEventTopicEvent($pt);");
-    }
-    if (topic == "iot/petcarezone/topic/states/${deviceId}") {
-      controller.runJavaScript("handleStateTopicEvent($pt);");
-    }
-    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+  Future<void> initializePage() async {
+    await webViewInit();
+    setState(() {
+      webViewWidget = buildWebViewWidget();
+      isWebViewWidgetInitialized = true;
+    });
   }
 
-  /// Indicate the notification is correct
+  Future<void> webViewInit() async {
+    controller
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            userInfoInit();
+          },
+          onPageFinished: (String url) {
+            mqttConnect();
+          },
+        ),
+      )
+      ..addJavaScriptChannel(
+        'Flutter',
+        onMessageReceived: (JavaScriptMessage message) async {
+          await jsChannelListener(message);
+        },
+      )
+      ..loadRequest(Uri.parse(ApiUrls.webViewUrl));
 
-  Future webViewInit() async {
     final platformController = controller.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          // request location permission
           final locationPermissionStatus = await Permission.locationWhenInUse.request();
-
-          // return the response
           return GeolocationPermissionsResponse(
             allow: locationPermissionStatus == PermissionStatus.granted,
             retain: false,
@@ -141,21 +113,122 @@ class _WebViewPageState extends State<WebViewPage> {
     await mqttInit();
   }
 
+  Future mqttInit() async {
+    final prefs = await SharedPreferences.getInstance();
+    String userUuid = prefs.getString('uuid')!;
+    client = MqttServerClient(
+      'axjobfp4mqj2j-ats.iot.ap-northeast-2.amazonaws.com',
+      userUuid,
+    );
+
+    final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
+    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
+    final rootCA = await rootBundle.load('assets/data/root-CA.crt');
+
+    final context = SecurityContext(withTrustedRoots: false);
+    context.useCertificateChainBytes(claimCert.buffer.asUint8List());
+    context.usePrivateKeyBytes(claimPrivateKey.buffer.asUint8List());
+    context.setTrustedCertificatesBytes(rootCA.buffer.asUint8List());
+    try {
+      client
+        ..useWebSocket = false
+        ..port = 8883
+        ..secure = true
+        ..autoReconnect = true
+        ..keepAlivePeriod = 60
+        ..securityContext = context
+        ..onConnected = onConnected
+        ..onDisconnected = onDisconnected;
+
+    } catch (e) {
+      logD.e('Error loading certificates: $e');
+    }
+  }
+
+  Future mqttConnect() async {
+    try {
+      if (client.connectionStatus?.state == MqttConnectionState.connected) {
+        logD.i('이미 MQTT 연결됨');
+      }
+      if (client.connectionStatus?.state == MqttConnectionState.disconnected) {
+        await client.connect();
+        logD.i('MQTT 연결함');
+      }
+    } catch (e) {
+      logD.e('Error: $e');
+      client.disconnect();
+    }
+  }
+
+  /// MQTT Callback method
+  void onConnected() {
+    logD.i('MQTT 연결 성공');
+    subscribe();
+  }
+
+  /// MQTT Callback method
+  void onDisconnected() async  {
+    logD.w('MQTT 연결 끊김');
+    if (isWebViewActive && !isDisposed) {
+      logD.i('MQTT 재연결 시도 중...');
+      await mqttConnect();
+    } else {
+      logD.w('WebView 비활성 상태로 MQTT 재연결 시도하지 않음');
+    }
+  }
+
+  void unsubscribe() {
+    if (client.connectionStatus?.state == MqttConnectionState.connected) {
+      if (stateTopic.isNotEmpty) {
+        client.unsubscribeStringTopic(stateTopic);
+      }
+      if (eventTopic.isNotEmpty) {
+        client.unsubscribeStringTopic(eventTopic);
+      }
+      logD.i('모든 구독 해제 완료');
+    } else {
+      logD.w('MQTT 연결되지 않아 구독 해제 불가');
+    }
+  }
+
+  void subscribe() {
+    if (stateTopic.isNotEmpty && eventTopic.isNotEmpty) {
+      client.subscribe(stateTopic, MqttQos.atLeastOnce);
+      client.subscribe(eventTopic, MqttQos.atLeastOnce);
+      client.updates.listen(onMessageReceived);
+      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+    }
+  }
+
+  void onMessageReceived(List<MqttReceivedMessage<MqttMessage>> c) {
+    final recMess = c[0].payload as MqttPublishMessage;
+    final pt = MqttUtilities.bytesToStringAsString(recMess.payload.message!);
+    final topic = c[0].topic;
+
+    if (topic == "iot/petcarezone/topic/events/$deviceId") {
+      controller.runJavaScript("handleEventTopicEvent($pt);");
+    }
+    if (topic == "iot/petcarezone/topic/states/$deviceId") {
+      controller.runJavaScript("handleStateTopicEvent($pt);");
+    }
+    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+  }
+
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
     logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
-  /// 1. get user info
   Future getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     userId = prefs.getString('userId')!;
     deviceId = prefs.getString('deviceId')!;
     petId = prefs.getInt('petId')!;
+    stateTopic = 'iot/petcarezone/topic/states/$deviceId';
+    eventTopic = 'iot/petcarezone/topic/events/$deviceId';
   }
 
-  /// 2. set user info
   Future setUserInfo() async {
     final accessToken = await userService.getAccessToken();
     await controller.runJavaScript("""
@@ -164,11 +237,10 @@ class _WebViewPageState extends State<WebViewPage> {
     localStorage.setItem('petId', '${petId == 0 ? "" : petId}');
     localStorage.setItem('deviceId', '${deviceId!.isEmpty ? "" : deviceId}');
     """);
-    await getLocalStorageValues();
   }
 
-  /// 3. pet id check
-  Future<void> trackPetId() async {
+  /// 1. 초기 등록 & 펫 프로필 수정 시
+  Future trackPetId() async {
     final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
@@ -183,28 +255,16 @@ class _WebViewPageState extends State<WebViewPage> {
 
       /// 3. device에 pet,user info 등록
       await setPetInfo();
-      await mqttSubscribe();
     } else {
       logD.e('Pet id 없음.');
     }
   }
 
   Future setPetInfo() async {
-    isSetPetInfo = true;
-    print('setPetInfo $userId,$petId');
+    final petList = await apiService.getPetProfile(petId: petId);
     await lunaService.registerUserProfile(userId, petId);
-  }
-
-  Future getLocalStorageValues() async {
-    final accessToken = await controller.runJavaScriptReturningResult("localStorage.getItem('accessToken')");
-    final userId = await controller.runJavaScriptReturningResult("localStorage.getItem('userId')");
-    final petId = await controller.runJavaScriptReturningResult("localStorage.getItem('petId')");
-    final deviceId = await controller.runJavaScriptReturningResult("localStorage.getItem('deviceId')");
-    logD.i('Fetched from localStorage - accessToken: $accessToken, userId: $userId, petId: $petId, deviceId: $deviceId');
-
-    if (petId is String && petId.isNotEmpty && deviceId is String && deviceId.isNotEmpty) {
-      await setPetInfo();
-      await mqttSubscribe();
+    if (petList != null) {
+      userService.saveLocalPetInfo(petList['petInfo']);
     }
   }
 
@@ -239,8 +299,6 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-
-
   Future jsChannelListener(message) async {
     if (message.message.startsWith('data:image/png')) {
       return await saveFile(message.message, 'png');
@@ -252,11 +310,7 @@ class _WebViewPageState extends State<WebViewPage> {
       logD.i("Device info deleted. navigate to device register page.");
       await userService.deleteUserInfo();
       if (mounted) {
-        return Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-                builder: (context) => const InitialDeviceHomePage()),
-            (route) => false);
+        return Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const InitialDeviceHomePage()), (route) => false);
       }
     }
     if (message.message == "petId") {
@@ -302,7 +356,7 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  Future<void> _getImage(ImageSource imageSource) async {
+  Future _getImage(ImageSource imageSource) async {
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile = await picker.pickImage(source: imageSource);
     if (pickedFile != null) {
@@ -319,23 +373,11 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
-  void _makePhoneCall(String url) async {
+  Future _makePhoneCall(String url) async {
     if (await launchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
       throw '전화 연결 실패: $url';
-    }
-  }
-
-  void backPageNavigator() {
-    if (widget.backPage != null) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => widget.backPage!),
-        (route) => false,
-      );
-    } else {
-      Navigator.pop(context);
     }
   }
 
@@ -378,14 +420,40 @@ class _WebViewPageState extends State<WebViewPage> {
     }
   }
 
+  void backPageNavigator() {
+    if (widget.backPage != null) {
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => widget.backPage!), (route) => false,
+      );
+    } else {
+      Navigator.pop(context);
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      isWebViewActive = true;
+      logD.i("WebView 상태 $state $isWebViewActive");
+    }
+    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+      isWebViewActive = false;
+      logD.i("WebView 상태 $state $isWebViewActive");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    initializePage();
     webViewInit();
   }
 
   @override
   void dispose() {
+    isDisposed = true;
+    client.disconnect();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
@@ -394,32 +462,9 @@ class _WebViewPageState extends State<WebViewPage> {
     return Scaffold(
       body: WillPopScope(
           onWillPop: onWillPopFunction,
-          child: Column(
-            children: [
-              Expanded(
-                child: WebViewWidget(
-                  controller: controller
-                    ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                    ..setNavigationDelegate(
-                      NavigationDelegate(
-                        onPageStarted: (String url) {
-                          userInfoInit();
-                        },
-                      ),
-                    )
-                    ..addJavaScriptChannel(
-                      'Flutter',
-                      onMessageReceived: (JavaScriptMessage message) async {
-                        await jsChannelListener(message);
-                      },
-                    )
-                    ..loadRequest(
-                      Uri.parse(ApiUrls.webViewUrl),
-                    ),
-                ),
-              )
-            ],
-          ),
+          child: isWebViewWidgetInitialized
+              ? Column(children: [Expanded(child: webViewWidget)])
+              : const Center(child: GradientCircularLoader(size: 30.0)),
       ),
     );
   }

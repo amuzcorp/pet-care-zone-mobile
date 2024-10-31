@@ -16,8 +16,9 @@ class ConnectSdkService {
   static const MethodChannel logChannel = MethodChannel('com.lge.petcarezone/logs');
 
   final StreamController<List<Map<String, dynamic>>> deviceStreamController = StreamController<List<Map<String, dynamic>>>.broadcast();
+  final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController<List<Map<String, dynamic>>>.broadcast();
   final StreamController<String> logStreamController = StreamController<String>.broadcast();
-  final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController.broadcast();
+
 
   StreamSubscription? logSubscription;
 
@@ -48,27 +49,23 @@ class ConnectSdkService {
     logChannel.setMethodCallHandler((MethodCall call) async {
       final result = call.arguments;
       logD.i('connectSDK result : $result');
-      try {
-        // JSON 변환 가능 여부 확인
-        final jsonData = jsonDecode(result);
-        logStreamController.add('connectSDK jsonData : $jsonData');
+      logStreamController.add(result);
 
-        /// Set Device ID
+      if (result.contains('iotDeviceId')) {
+        final jsonData = jsonDecode(result);
+        /// Provision 완료
         if (jsonData['payload'] != null && jsonData['payload']['iotDeviceId'] != null) {
           logStreamController.add('provision 요청 성공 : ${jsonData['payload']['iotDeviceId']}');
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('deviceId', jsonData['payload']['iotDeviceId']);
           logD.i('Device ID has been set : ${prefs.getString('deviceId')}');
         }
-      } catch (e) {
-        logStreamController.add('Error decoding or encoding JSON: $e');
-        print("Error decoding or encoding JSON: $e");
       }
     });
   }
 
   void startLogSubscription(void Function(String data) onData) {
-    logSubscription ??= logStream.listen((data) {
+    logSubscription ??= logStream.listen((data) async {
       collectedLogs.add(data);
       onData(data);
     });
@@ -231,18 +228,17 @@ class ConnectSdkService {
     channel.setMethodCallHandler((MethodCall call) async {
       switch (call.method) {
         case "webOSRequest":
-          print('request ${call.arguments}');
+          logD.i('request ${call.arguments}');
           collectedLogs.add('webOSRequest => ${call.arguments}');
           logStreamController.add(call.arguments);
-          final bool success = call.arguments['success'];
-          final String response = call.arguments['response'];
-          print("request status: $success, Response: $response");
+          // final bool success = call.arguments['success'];
+          // final String response = call.arguments['response'];
+          // print("request status: $success, Response: $response");
           break;
         case "onDeviceAdded":
         case "onDeviceUpdated":
           final device = Map<String, dynamic>.from(call.arguments);
           final deviceIp = device['lastKnownIPAddress'] as String;
-          print('deviceIp $deviceIp');
           final String friendlyName = device['friendlyName']?.toLowerCase() ?? '';
           if (friendlyName.contains("pet")) {
             // 기존에 같은 IP를 가진 기기가 있는지 확인

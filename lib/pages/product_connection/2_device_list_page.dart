@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/font_constants.dart';
+import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 
 import '../../widgets/indicator/indicator.dart';
@@ -14,6 +16,7 @@ class DeviceListPage extends StatefulWidget {
 }
 
 class _DeviceListPageState extends State<DeviceListPage> {
+  final MessageService messageService = MessageService();
   late ValueNotifier<bool> isLoading;
 
   @override
@@ -33,7 +36,6 @@ class _DeviceListPageState extends State<DeviceListPage> {
       showAppBar: true,
       description: "연결 가능한 제품",
       contentWidget: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           boxH(80),
           Row(
@@ -58,6 +60,15 @@ class _DeviceListPageState extends State<DeviceListPage> {
             },
           ),
         ],
+      ),
+      bottomButton: StreamBuilder<String>(
+        stream: messageService.messageController.stream,
+        builder: (context, snapshot) {
+          if (snapshot.data != null && snapshot.data!.isNotEmpty) {
+            return Text(snapshot.data!, style: TextStyle(color: ColorConstants.red));
+          }
+          return Container();
+        },
       ),
     );
   }

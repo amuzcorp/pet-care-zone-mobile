@@ -34,6 +34,9 @@ class ApiService {
 
     try {
       switch (method.toUpperCase()) {
+        case 'GET':
+          response = await http.get(Uri.parse(url), headers: headers);
+          break;
         case 'POST':
           response = await http.post(Uri.parse(url), headers: headers, body: json.encode(body));
           break;
@@ -44,7 +47,7 @@ class ApiService {
           throw Exception('HTTP method $method not supported');
       }
 
-      logD.i('Response: StatusCode=${response.statusCode}, Body=${response.body}');
+      logD.i('Response: StatusCode=${response.statusCode}, Body=${json.decode(utf8.decode(response.bodyBytes))}');
       final responseBody = json.decode(utf8.decode(response.bodyBytes));
 
       if (response.statusCode == 200) {
@@ -123,6 +126,17 @@ class ApiService {
       url: '${ApiUrls.deviceUrl}/provision',
       body: requestBody,
       method: 'POST',
+      isToken: true,
+    );
+  }
+
+  Future<Map<String, dynamic>?> getPetProfile({
+    required int petId,
+  }) async {
+    return await request(
+      url: '${ApiUrls.getPetProfile}?petId=$petId',
+      body: {},
+      method: 'GET',
       isToken: true,
     );
   }

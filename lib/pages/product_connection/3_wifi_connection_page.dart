@@ -38,7 +38,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final TextEditingController passwordController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
 
-
   late StreamController<String> messageController;
 
   Uint8List? macAddressArray;
@@ -53,24 +52,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   BluetoothCharacteristic? targetCharacteristic;
 
   OverlayEntry? _overlayEntry;
-
-  void _openDropdown(List<Map<String, String>> wifiInfos) {
-    if (!_isDropdownOpen) {
-      _overlayEntry = _createDropdown(wifiInfos);
-      Overlay.of(context)?.insert(_overlayEntry!);
-      setState(() {
-        _isDropdownOpen = true;
-      });
-    }
-  }
-
-  // 드롭다운 닫기
-  void _closeDropdown() {
-    _overlayEntry?.remove();
-    setState(() {
-      _isDropdownOpen = false;
-    });
-  }
 
   OverlayEntry _createDropdown(List<Map<String, String>> wifiInfos) {
     return OverlayEntry(
@@ -96,75 +77,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
           ),
         );
       },
-    );
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    bleService.getCharacteristics();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    wifiService.initialize();
-    messageController = messageService.messageController;
-    connectSdkService.setupListener();
-    connectSdkService.startScan();
-    passwordController.clear();
-    logD.i('BLE connectedDevice ${bleService.connectedDevice}');
-  }
-
-  @override
-  void dispose() {
-    wifiService.dispose();
-    connectSdkService.stopScan();
-    passwordController.dispose();
-    messageController.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return BasicPage(
-      showAppBar: true,
-      description: "Pet Care Zone에 연결할\nWi-Fi 네트워크를 아래 화면에서\n선택해주세요.",
-      topHeight: 50,
-      contentWidget: Column(
-        children: [
-          Row(
-            children: [
-              FontConstants.inputLabelText('Wi-Fi 네트워크'),
-            ],
-          ),
-          boxH(10),
-          widgetWifiDropdown(),
-          boxH(20),
-          Row(
-            children: [
-              FontConstants.inputLabelText('비밀번호'),
-            ],
-          ),
-          boxH(10),
-          widgetPasswordField(),
-          boxH(16),
-          Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  isLoading ? const GradientCircularLoader() : Container(),
-                  errorStreamBuilder(),
-                ],
-              )
-          ),
-          boxH(16),
-        ],
-      ),
-      bottomButton: BasicButton(
-        text: "연결하기",
-        onPressed: connectToWifi,
-      ),
     );
   }
 
@@ -233,7 +145,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       stream: wifiService.wifiStream,
       builder: (context, snapshot) {
         List<Map<String, String>> wifiInfos = snapshot.data ?? [];
-        print('wifiInfos $wifiInfos');
 
         if (wifiInfos.isNotEmpty && selectedWifi.isEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -308,6 +219,24 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     );
   }
 
+  void _openDropdown(List<Map<String, String>> wifiInfos) {
+    if (!_isDropdownOpen) {
+      _overlayEntry = _createDropdown(wifiInfos);
+      Overlay.of(context)?.insert(_overlayEntry!);
+      setState(() {
+        _isDropdownOpen = true;
+      });
+    }
+  }
+
+  // 드롭다운 닫기
+  void _closeDropdown() {
+    _overlayEntry?.remove();
+    setState(() {
+      _isDropdownOpen = false;
+    });
+  }
+
   Future<void> navigateToPincodeCheckPage() async {
     wifiService.scanTimer?.cancel();
     Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
@@ -327,7 +256,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
-      await Future.delayed(const Duration(seconds: 5));
+      await Future.delayed(const Duration(seconds: 7));
       await navigateToPincodeCheckPage();
     } catch (e) {
       errorListener(e);
@@ -340,10 +269,11 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   Future<bool> checkWifiConnection() async {
     String currentWifi = await wifiService.getCurrentSSID();
-    print('currentWifi $currentWifi');
     if (currentWifi != selectedWifi) {
       messageController.add('*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi');
       return false;
+    } else {
+      messageController.add('');
     }
     return true;
   }
@@ -365,5 +295,74 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       return false;
     }
     return true;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    bleService.getCharacteristics();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    wifiService.initialize();
+    messageController = messageService.messageController;
+    connectSdkService.setupListener();
+    connectSdkService.startScan();
+    passwordController.clear();
+    logD.i('BLE connectedDevice ${bleService.connectedDevice}');
+  }
+
+  @override
+  void dispose() {
+    wifiService.dispose();
+    connectSdkService.stopScan();
+    passwordController.dispose();
+    messageController.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BasicPage(
+      showAppBar: true,
+      description: "Pet Care Zone에 연결할\nWi-Fi 네트워크를 아래 화면에서\n선택해주세요.",
+      topHeight: 50,
+      contentWidget: Column(
+        children: [
+          Row(
+            children: [
+              FontConstants.inputLabelText('Wi-Fi 네트워크'),
+            ],
+          ),
+          boxH(10),
+          widgetWifiDropdown(),
+          boxH(20),
+          Row(
+            children: [
+              FontConstants.inputLabelText('비밀번호'),
+            ],
+          ),
+          boxH(10),
+          widgetPasswordField(),
+          boxH(16),
+          Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  isLoading ? const GradientCircularLoader() : Container(),
+                  errorStreamBuilder(),
+                ],
+              )
+          ),
+          boxH(16),
+        ],
+      ),
+      bottomButton: BasicButton(
+        text: "연결하기",
+        onPressed: connectToWifi,
+      ),
+    );
   }
 }

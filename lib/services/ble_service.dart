@@ -18,7 +18,6 @@ class BleService {
   String? macAddressWithSeparatorString = "";
 
   Future getCharacteristics() async {
-    print('connectedDevice $connectedDevice');
     if (connectedDevice != null) {
       await Future.delayed(const Duration(seconds: 1));
       List<BluetoothService> services = await connectedDevice.discoverServices();
@@ -53,7 +52,6 @@ class BleService {
       int value = rand.nextInt(256);
       macAddressBytes.add(value);
     }
-    print('macAddressArray $macAddressBytes');
     macAddressArray = Uint8List.fromList(macAddressBytes);
   }
 

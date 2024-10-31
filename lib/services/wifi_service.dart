@@ -71,12 +71,10 @@ class WifiService {
         };
       }).toList();
 
-      print('wifiList $wifiList');
-
       if (!wifiStreamController.isClosed) {
         wifiStreamController.add(wifiList);
       } else {
-        print("StreamController is closed, cannot add new events.");
+        logD.w("StreamController is closed, cannot add new events.");
       }
     }
   }
@@ -92,12 +90,11 @@ class WifiService {
 
   void dispose() {
     logD.i('wifi service dispose');
-    print('scanTimer?.isActive ${scanTimer?.isActive}');
     if (scanTimer?.isActive ?? false) {
       scanTimer?.cancel();
-      print('scanTimer cancelled');
+      logD.w('scanTimer cancelled');
     } else {
-      print('scanTimer was already cancelled or null');
+      logD.w('scanTimer was already cancelled or null');
     }
     stopListeningToScanResults();
     if (!wifiStreamController.isClosed) {

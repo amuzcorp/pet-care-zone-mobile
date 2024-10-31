@@ -5,6 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
+import 'package:petcarezone/services/message_service.dart';
 
 import '../../constants/image_constants.dart';
 import '../../constants/size_constants.dart';
@@ -26,18 +27,15 @@ class _DeviceListState extends State<DeviceList> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final WifiService wifiService = WifiService();
-
+  final MessageService messageService = MessageService();
   final double itemHeight = 87.0;
 
   Future<void> bleConnectToDevice(BluetoothDevice device) async {
-    print('bleConnectToDevice $device');
     if (device.isDisconnected) {
       try {
         await device.connect();
-        print('Device connected: $device');
       } catch (e) {
         await device.connect();
-        print("Error connecting to device: $e");
       }
     }
   }
@@ -47,10 +45,6 @@ class _DeviceListState extends State<DeviceList> {
     widget.onLoadingChanged?.call(true);
     /// BLE Data
     final BluetoothDevice bluetoothDevice = device['scanResult'].device;
-
-    print('ble whole data $device');
-    print('BLE device: $bluetoothDevice');
-    print('bluetoothDevice ${device['platformName']}');
 
     try {
       /// BLE 기기 연결
@@ -69,6 +63,7 @@ class _DeviceListState extends State<DeviceList> {
       }
 
     } catch (e) {
+      messageService.messageController.add("Bluetooth 연결을 다시 진행 후 메뉴를 눌러주세요.");
       logD.e('Error during saveDevicesAndNavigate: $e');
       rethrow;
     } finally {
@@ -96,7 +91,7 @@ class _DeviceListState extends State<DeviceList> {
         stream: connectSdkService.bleStream,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(child: GradientCircularLoader());
           }
 
           if (snapshot.hasError) {

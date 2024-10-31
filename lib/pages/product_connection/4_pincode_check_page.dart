@@ -4,12 +4,15 @@ import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/pages/product_connection/5_pincode_connection_page.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
+import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
+import '../../constants/color_constants.dart';
 import '../../data/models/device_model.dart';
 import '../../services/connect_sdk_service.dart';
+import '../../utils/logger.dart';
 
 class PincodeCheckPage extends StatefulWidget {
   const PincodeCheckPage({
@@ -24,33 +27,14 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final LunaService lunaService = LunaService();
-
-  Future webOSInit() async {
-    await deviceService.deviceInitialize();
-  }
-
-  Future<void> getDeviceInfoAndRequestParingKey() async {
-    await saveWebOSDeviceInfo();
-    await Future.delayed(const Duration(seconds: 2));
-    try {
-      final deviceInfo = await deviceService.getWebOSDeviceInfo();
-      if (deviceInfo != null) {
-        await connectSdkService.requestParingKey(deviceInfo);
-      } else {
-        print('No device information available');
-      }
-    } catch (e) {
-      print('Error fetching device info: $e');
-    }
-  }
+  final MessageService messageService = MessageService();
 
   Future saveWebOSDeviceInfo() async {
     final matchedWebosDevice = connectSdkService.matchedWebosDevice;
 
-    print('matchedWebosDevice $matchedWebosDevice');
+    logD.i('matchedWebosDevice $matchedWebosDevice');
 
     if (matchedWebosDevice.isNotEmpty) {
-
       /// DeviceModel 생성
       final deviceModel = DeviceModel(
         serialNumber: matchedWebosDevice['modelNumber'],
@@ -63,15 +47,31 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
 
       /// webOS 필요한 Data 저장
       await deviceService.saveDeviceInfo(deviceModel);
+
+      await deviceService.deviceInitialize();
+    } else {
+      messageService.messageController.add("기기 연결에 실패했어요. 뒤로 이동해\nWi-Fi 연결을 다시 시도해 주세요.");
     }
   }
 
+  Future requestParingKey() async {
+    try {
+      final deviceInfo = await deviceService.getWebOSDeviceInfo();
+      if (deviceInfo != null) {
+        await connectSdkService.requestParingKey(deviceInfo);
+      } else {
+        messageService.messageController.add("webOS 연결이 필요해요.\n뒤로 이동해서 다시 Wi-Fi를 연결해 주세요.");
+        logD.e('No device information available');
+      }
+    } catch (e) {
+      logD.e('Error fetching device info: $e');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    webOSInit();
-    getDeviceInfoAndRequestParingKey();
+    saveWebOSDeviceInfo();
   }
 
   @override
@@ -83,11 +83,19 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
+          StreamBuilder<String>(
+            stream: messageService.messageController.stream,
+            builder: (context, snapshot) {
+              String errorText = snapshot.data ?? "";
+              return Text(errorText, style: TextStyle(color: ColorConstants.red),);
+            },
+          ),
         ],
       ),
-      bottomButton: const BasicButton(
+      bottomButton: BasicButton(
         text: "다음",
-        destinationPage: PincodeConnectionPage(),
+        destinationPage: const PincodeConnectionPage(),
+        onPressed: () => requestParingKey(),
       ),
     );
   }

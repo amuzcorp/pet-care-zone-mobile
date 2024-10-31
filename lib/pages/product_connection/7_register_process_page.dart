@@ -5,6 +5,7 @@ import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 
+import '../../utils/logger.dart';
 import '../../widgets/images/image_widget.dart';
 import '../../widgets/page/basic_page.dart';
 import '8_register_complete_page.dart';
@@ -23,12 +24,11 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
   double progressValue = 0;
   List<String> logMessages = [];
 
-
   Future handleDeviceRegistrationAndProvision() async {
     try {
       final device = await deviceService.getDeviceInfo();
       if (device == null) {
-        print('No device info available.');
+        logD.e('No device info available.');
         return;
       } else {
         await deviceService.connectToDevice();
@@ -113,9 +113,6 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
                   ),
                 ],
               );
-            },
-            onEnd: () {
-              print('Progress complete!');
             },
           ),
           const SizedBox(height: 20),

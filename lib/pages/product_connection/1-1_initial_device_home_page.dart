@@ -40,7 +40,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     if (webOSDeviceInfo.isNotEmpty && !isDeviceReady) {
       connectSdkService.setupListener();
       await deviceService.deviceInitialize();
-      await deviceService.connectToDevice();
       isDeviceReady = true;
       connectSdkService.logStreamController.add("device connection is completed.");
     }
@@ -59,7 +58,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
       await prefs.setInt('petId', petId);
       await prefs.setString('deviceId', deviceId!);
 
-      logD.i('[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\n deviceName: $deviceName');
+      logD.i('[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\ndeviceName: $deviceName');
 
       if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
         setState(() {

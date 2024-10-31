@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:petcarezone/widgets/snackbar/custom_snackbar.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/font_constants.dart';
+import '../../utils/logger.dart';
 
 class BasicButton extends StatefulWidget {
   const BasicButton({
@@ -50,7 +50,7 @@ class _BasicButtonState extends State<BasicButton> {
               try {
                 await widget.apiCall!(context);
               } catch (error) {
-                print('error $error');
+                logD.e('error $error');
               }
             }
             if (widget.destinationPage != null) {

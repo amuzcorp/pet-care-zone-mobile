@@ -57,7 +57,7 @@ class DeviceService {
     try {
       await prefs.setString('webos_device_info', deviceJson);
       connectSdkService.logStreamController.add("WebOS device info saved: $modifiedDevice");
-      print('WebOS device info saved: $modifiedDevice');
+      logD.i('WebOS device info saved: $modifiedDevice');
     } catch (e) {
       logD.e('Error saving device: $e');
     }
@@ -76,7 +76,7 @@ class DeviceService {
         Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
         return deviceMap;
       } else {
-        print('No device info found in SharedPreferences');
+        logD.e('No device info found in SharedPreferences');
       }
     } catch (e) {
       logD.e('Error fetching device info: $e');
@@ -98,7 +98,7 @@ class DeviceService {
         Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
         return deviceMap;
       } else {
-        print('No ble info found in SharedPreferences');
+        logD.e('No ble info found in SharedPreferences');
       }
     } catch (e) {
       logD.e('Error fetching device info: $e');
@@ -118,6 +118,24 @@ class DeviceService {
       logD.e('Error retrieving device ID: $e');
     }
     return null;
+  }
+
+  Future<void> saveLocalDeviceInfo(Map<String, dynamic> deviceInfo) async {
+    final prefs = await SharedPreferences.getInstance();
+    dynamic userData = prefs.getString('user');
+
+    if (userData != null) {
+      try {
+        Map<String, dynamic> userMap = jsonDecode(userData);
+        userMap['deviceList'].add(deviceInfo);
+
+        String updatedUserData = jsonEncode(userMap);
+        logD.e('updatedUserData $updatedUserData');
+        await prefs.setString('user', updatedUserData);
+      } catch (e) {
+        logD.e('Error decoding or updating user data: $e');
+      }
+    }
   }
 
   Future<void> saveDeviceInfo(DeviceModel device) async {
