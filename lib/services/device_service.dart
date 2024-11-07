@@ -130,7 +130,6 @@ class DeviceService {
         userMap['deviceList'].add(deviceInfo);
 
         String updatedUserData = jsonEncode(userMap);
-        logD.e('updatedUserData $updatedUserData');
         await prefs.setString('user', updatedUserData);
       } catch (e) {
         logD.e('Error decoding or updating user data: $e');

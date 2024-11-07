@@ -10,7 +10,6 @@ import 'package:petcarezone/services/message_service.dart';
 import '../../constants/image_constants.dart';
 import '../../constants/size_constants.dart';
 import '../../services/device_service.dart';
-import '../../services/wifi_service.dart';
 import '../../utils/logger.dart';
 import '../indicator/indicator.dart';
 
@@ -26,7 +25,6 @@ class DeviceList extends StatefulWidget {
 class _DeviceListState extends State<DeviceList> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
-  final WifiService wifiService = WifiService();
   final MessageService messageService = MessageService();
   final double itemHeight = 87.0;
 

@@ -8,12 +8,10 @@ import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
-import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
-import '../../services/luna_service.dart';
 import '../../services/wifi_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/box/box.dart';
@@ -30,8 +28,6 @@ class WifiConnectionPage extends StatefulWidget {
 
 class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final WifiService wifiService = WifiService();
-  final DeviceService deviceService = DeviceService();
-  final LunaService lunaService = LunaService();
   final BleService bleService = BleService();
   final MessageService messageService = MessageService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
@@ -61,7 +57,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
           height: MediaQuery.of(context).size.height * 0.4,
           child: CompositedTransformFollower(
             link: _layerLink,
-            offset: const Offset(0, 60),
+            offset: const Offset(0, 65),
             child: Material(
               color: Colors.white,
               borderRadius: BorderRadius.circular(SizeConstants.borderSize),
@@ -141,47 +137,55 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   }
 
   Widget widgetWifiDropdown() {
-    return StreamBuilder<List<Map<String, String>>>(
-      stream: wifiService.wifiStream,
-      builder: (context, snapshot) {
-        List<Map<String, String>> wifiInfos = snapshot.data ?? [];
+    return Builder(
+      builder: (context) {
+        return StreamBuilder<List<Map<String, String>>>(
+          stream: wifiService.wifiStream,
+          builder: (context, snapshot) {
+            List<Map<String, String>> wifiInfos = snapshot.data ?? [];
 
-        if (wifiInfos.isNotEmpty && selectedWifi.isEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            setState(() {
-              selectedWifi = wifiInfos[0]['SSID'] ?? "";
-            });
-          });
-        }
+            if (wifiInfos.isNotEmpty && selectedWifi.isEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                setState(() {
+                  selectedWifi = wifiInfos[0]['SSID'] ?? "";
+                });
+              });
+            }
 
-        return CompositedTransformTarget(
-          link: _layerLink,
-          child: GestureDetector(
-            onTap: () {
-              if (_isDropdownOpen) {
-                _closeDropdown();
-              } else {
-                _openDropdown(wifiInfos);
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 16.0),
-              decoration: BoxDecoration(
-                color: ColorConstants.white,
-                borderRadius: BorderRadius.circular(SizeConstants.borderSize),
-                border: Border.all(color: ColorConstants.border, width: SizeConstants.borderWidth),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    selectedWifi.isEmpty ? 'Wi-Fi Scanning...' : selectedWifi
+            return CompositedTransformTarget(
+              link: _layerLink,
+              child: GestureDetector(
+                onTap: wifiInfos.isNotEmpty
+                    ? () {
+                  if (_isDropdownOpen) {
+                    _closeDropdown();
+                  } else {
+                    _openDropdown(wifiInfos);
+                  }
+                }
+                    : null,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 21.0),
+                  decoration: BoxDecoration(
+                    color: ColorConstants.white,
+                    borderRadius: BorderRadius.circular(SizeConstants.borderSize),
+                    border: Border.all(color: ColorConstants.border, width: SizeConstants.borderWidth),
                   ),
-                  Icon(_isDropdownOpen ? Icons.arrow_drop_up : Icons.arrow_drop_down),
-                ],
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(selectedWifi.isEmpty ? 'Wi-Fi Scanning...' : selectedWifi),
+                      Icon(
+                        _isDropdownOpen ? Icons.arrow_back_ios : Icons.arrow_forward_ios,
+                        size: 15,
+                        color: ColorConstants.inputLabelColor,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
@@ -231,13 +235,17 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   // 드롭다운 닫기
   void _closeDropdown() {
-    _overlayEntry?.remove();
-    setState(() {
-      _isDropdownOpen = false;
-    });
+    if (_overlayEntry != null) {
+      _overlayEntry?.remove();
+      _overlayEntry = null;
+      setState(() {
+        _isDropdownOpen = false;
+      });
+    }
   }
 
   Future<void> navigateToPincodeCheckPage() async {
+    _closeDropdown();
     wifiService.scanTimer?.cancel();
     Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
   }
@@ -249,7 +257,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       messageController.add('* BLE 연결을 확인해주세요.');
       return;
     }
-
     setState(() {
       isLoading = true;
     });
@@ -287,6 +294,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     } else {
       messageController.add('에러가 발생했어요. $error');
     }
+    print('bleErrorText $error');
   }
 
   bool checkPassword() {
@@ -316,6 +324,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   @override
   void dispose() {
+    _closeDropdown();
     wifiService.dispose();
     connectSdkService.stopScan();
     passwordController.dispose();
@@ -327,7 +336,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "Pet Care Zone에 연결할\nWi-Fi 네트워크를 아래 화면에서\n선택해주세요.",
+      description: "Pet Care Zone에 연결할 Wi-Fi\n네트워크를 아래 화면에서 선택해주세요.",
       topHeight: 50,
       contentWidget: Column(
         children: [

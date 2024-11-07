@@ -5,7 +5,7 @@ description: Pet care zone.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 #version: 0.2.5+10
-version: 0.0.0+119
+version: 0.0.0+120
 
 environment:
   sdk: '>=2.19.2 <3.0.0'
@@ -39,6 +39,10 @@ dependencies:
   firebase_messaging: ^14.7.10
   firebase_core: ^2.24.2
   uuid: ^4.2.2
+  mobile_device_identifier: ^0.0.2
+  googleapis_auth: ^1.4.1
+  flutter_local_notifications: ^17.2.4
+  android_id: ^0.4.0
 
 flutter_icons:
   android: true

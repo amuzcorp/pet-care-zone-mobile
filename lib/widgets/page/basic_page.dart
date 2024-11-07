@@ -48,13 +48,16 @@ class BasicPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                description ?? '',
-                style: TextStyle(
-                  fontSize: FontConstants.descriptionTextSize,
-                  fontWeight: FontWeight.bold,
+              Flexible(
+                child: Text(
+                  description ?? '',
+                  style: TextStyle(
+                    fontSize: FontConstants.descriptionTextSize,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.left,
+                  softWrap: true,
                 ),
-                textAlign: TextAlign.left,
               ),
             ],
           ),
@@ -131,7 +134,7 @@ class BasicPage extends StatelessWidget {
                 ],
               )
             : Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                 child: pageContent,
               ),
       ),

@@ -2,9 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
+import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
-import 'package:petcarezone/services/device_service.dart';
-import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
@@ -25,9 +24,8 @@ class PincodeConnectionPage extends StatefulWidget {
 class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   final TextEditingController pincodeController = TextEditingController();
   final ConnectSdkService connectSdkService = ConnectSdkService();
-  final DeviceService deviceService = DeviceService();
-  final LunaService lunaService = LunaService();
   final MessageService messageService = MessageService();
+  final BleService bleService = BleService();
   String? lastLog = "";
   int countdown = 0;
   bool isCountdownRunning = false;
@@ -98,13 +96,14 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "Pet Care Zone 제품 화면에\n표시된 PIN Code를 입력하세요.",
+      description: "Pet Care Zone 제품 화면에 표시된\nPIN Code를 입력하세요.",
       topHeight: 70,
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide5),
           PincodeInput(pincodeController: pincodeController),
-          boxH(16),
+          boxH(12),
+          Text("MAC : ${bleService.connectedDevice.remoteId.toString()}", style: TextStyle(color: ColorConstants.appBarIconColor),),
           Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -119,11 +118,10 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
                         return Text("", style: TextStyle(color: ColorConstants.red));
                       }
                     },
-                  )
+                  ),
                 ],
               )
           ),
-          boxH(15),
         ],
       ),
       bottomButton: BasicButton(

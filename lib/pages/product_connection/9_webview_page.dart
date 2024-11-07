@@ -148,11 +148,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Future mqttConnect() async {
     try {
       if (client.connectionStatus?.state == MqttConnectionState.connected) {
-        logD.i('이미 MQTT 연결됨');
+        logD.i('MQTT 연결됨');
       }
       if (client.connectionStatus?.state == MqttConnectionState.disconnected) {
         await client.connect();
-        logD.i('MQTT 연결함');
+        logD.i('MQTT 연결 완료');
       }
     } catch (e) {
       logD.e('Error: $e');
@@ -174,20 +174,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       await mqttConnect();
     } else {
       logD.w('WebView 비활성 상태로 MQTT 재연결 시도하지 않음');
-    }
-  }
-
-  void unsubscribe() {
-    if (client.connectionStatus?.state == MqttConnectionState.connected) {
-      if (stateTopic.isNotEmpty) {
-        client.unsubscribeStringTopic(stateTopic);
-      }
-      if (eventTopic.isNotEmpty) {
-        client.unsubscribeStringTopic(eventTopic);
-      }
-      logD.i('모든 구독 해제 완료');
-    } else {
-      logD.w('MQTT 연결되지 않아 구독 해제 불가');
     }
   }
 

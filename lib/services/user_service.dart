@@ -83,7 +83,7 @@ class UserService {
       //   await prefs.remove('user');
       //   return false;
       // }
-      // return true;
+      return true;
     }
     return false;
   }
@@ -110,7 +110,6 @@ class UserService {
         userMap['petList'].add(petInfo);
 
         String updatedUserData = jsonEncode(userMap);
-        logD.e('updatedUserData $updatedUserData');
         await prefs.setString('user', updatedUserData);
       } catch (e) {
         logD.e('Error decoding or updating user data: $e');
@@ -132,6 +131,7 @@ class UserService {
         userMap['userInfo']['deviceList'] = [];
 
         String updatedUserData = jsonEncode(userMap);
+        print('updatedUserData $updatedUserData');
         await prefs.setString('user', updatedUserData);
       } catch (e) {
         logD.e('Error decoding or updating user data: $e');
