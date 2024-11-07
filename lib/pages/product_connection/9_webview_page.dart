@@ -10,6 +10,7 @@ import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
+import 'package:petcarezone/pages/ai_health_camera_page.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/device_service.dart';
@@ -35,7 +36,8 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
-  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel =
+      MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
   final WebViewController controller = WebViewController();
@@ -102,7 +104,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          final locationPermissionStatus = await Permission.locationWhenInUse.request();
+          final locationPermissionStatus =
+              await Permission.locationWhenInUse.request();
           return GeolocationPermissionsResponse(
             allow: locationPermissionStatus == PermissionStatus.granted,
             retain: false,
@@ -122,7 +125,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
 
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey =
+        await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -139,7 +143,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         ..securityContext = context
         ..onConnected = onConnected
         ..onDisconnected = onDisconnected;
-
     } catch (e) {
       logD.e('Error loading certificates: $e');
     }
@@ -167,7 +170,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   /// MQTT Callback method
-  void onDisconnected() async  {
+  void onDisconnected() async {
     logD.w('MQTT 연결 끊김');
     if (isWebViewActive && !isDisposed) {
       logD.i('MQTT 재연결 시도 중...');
@@ -182,7 +185,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
       client.updates.listen(onMessageReceived);
-      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i(
+          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
     }
   }
 
@@ -197,13 +201,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
       controller.runJavaScript("handleStateTopicEvent($pt);");
     }
-    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+    logD.i(
+        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i(
+        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   Future getUserInfo() async {
@@ -227,7 +233,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// 1. 초기 등록 & 펫 프로필 수정 시
   Future trackPetId() async {
-    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller
+        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
     /// 2. petId 있는 경우
@@ -270,7 +277,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         await folder.create(recursive: true);
       }
 
-      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath =
+          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -296,7 +304,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       logD.i("Device info deleted. navigate to device register page.");
       await userService.deleteUserInfo();
       if (mounted) {
-        return Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const InitialDeviceHomePage()), (route) => false);
+        return Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+                builder: (context) => const InitialDeviceHomePage()),
+            (route) => false);
       }
     }
     if (message.message == "petId") {
@@ -340,6 +352,31 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (message.message.startsWith("tel:")) {
       _makePhoneCall(message.message);
     }
+
+    if (message.message.startsWith("openAICamAtFlutter:")) {
+      String type = message.message.split(':')[1];
+      Map titles = {"patella": "슬개골", "oral": "구강", "bmi": "비만도"};
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) => AIHealthCameraPage(
+                  type: titles[type],
+                  cameraShutFunction: (String base64) {
+                    _uploadPicture(base64);
+                  })),
+        );
+      }
+    }
+  }
+
+  void _uploadPicture(String base64String) {
+    Future.delayed(
+        const Duration(milliseconds: 150),
+        () => {
+              controller.runJavaScript(
+                  'window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
+            });
   }
 
   Future _getImage(ImageSource imageSource) async {
@@ -354,7 +391,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         // Base64로 변환합니다.
         String? base64String = base64Encode(compressedBytes);
-        controller.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
+        controller.runJavaScript(
+            'window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -384,10 +422,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         return false;
       }
 
-      if (currentUrl.contains('/home') ||
-          currentUrl.contains('/profile/register') ||
-          currentUrl.contains('/timeline') ||
-          currentUrl.contains('/ai-health')) {
+      List splittedUrl = currentUrl.split('/');
+      if (splittedUrl.isEmpty) {
+        return true;
+      }
+
+      String path = splittedUrl[splittedUrl.length - 1];
+
+      if (path == 'home' ||
+          path == 'register' ||
+          path == 'timeline' ||
+          path == 'ai-health') {
         if (mounted) {
           if (widget.backPage != null) {
             Navigator.pushAndRemoveUntil(
@@ -400,7 +445,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           }
         }
       } else {
-        controller.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
+        controller.runJavaScript(
+            "if (window.location.pathname !== '/') { window.history.back(); }");
       }
       return false;
     }
@@ -408,7 +454,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   void backPageNavigator() {
     if (widget.backPage != null) {
-      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => widget.backPage!), (route) => false,
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => widget.backPage!),
+        (route) => false,
       );
     } else {
       Navigator.pop(context);
@@ -421,7 +470,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       isWebViewActive = true;
       logD.i("WebView 상태 $state $isWebViewActive");
     }
-    if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused) {
       isWebViewActive = false;
       logD.i("WebView 상태 $state $isWebViewActive");
     }
@@ -447,10 +497,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       body: WillPopScope(
-          onWillPop: onWillPopFunction,
-          child: isWebViewWidgetInitialized
-              ? Column(children: [Expanded(child: webViewWidget)])
-              : const Center(child: GradientCircularLoader(size: 30.0)),
+        onWillPop: onWillPopFunction,
+        child: isWebViewWidgetInitialized
+            ? Column(children: [Expanded(child: webViewWidget)])
+            : const Center(child: GradientCircularLoader(size: 30.0)),
       ),
     );
   }
