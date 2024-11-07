@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,8 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 //푸시 알림 메시지와 상호작용을 정의합니다.
 Future<void> setupInteractedMessage() async {
   //앱이 종료된 상태에서 열릴 때 getInitialMessage 호출
-  RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  RemoteMessage? initialMessage =
+      await FirebaseMessaging.instance.getInitialMessage();
 
   if (initialMessage != null) {
     _handleMessage(initialMessage);
@@ -90,33 +92,34 @@ class MyAppState extends State<MyApp> {
     _initialPage = userService.initializeApp();
     permissionCheck.requestPermission();
   }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        fontFamily: 'LG_Smart_UI',
-      ),
-      routes: {
-        '/petHome' : (context) => WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl))
-      },
-      home: FutureBuilder<Widget>(
-        future: _initialPage,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (snapshot.hasError) {
-            return const Scaffold(
-              body: Center(child: Text('Error initializing app')),
-            );
-          } else {
-            return snapshot.data ?? const LoginPage();
-          }
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          fontFamily: 'LG_Smart_UI',
+        ),
+        routes: {
+          '/petHome': (context) =>
+              WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl))
         },
-      ),
-    );
+        home: FutureBuilder<Widget>(
+          future: _initialPage,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            } else if (snapshot.hasError) {
+              return const Scaffold(
+                body: Center(child: Text('Error initializing app')),
+              );
+            } else {
+              return snapshot.data ?? const LoginPage();
+            }
+          },
+        ));
   }
 }
