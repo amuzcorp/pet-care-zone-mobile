@@ -127,8 +127,8 @@ class UserService {
       try {
         Map<String, dynamic> userMap = jsonDecode(userData);
 
-        userMap['userInfo']['petList'] = [];
-        userMap['userInfo']['deviceList'] = [];
+        userMap['petList'] = [];
+        userMap['deviceList'] = [];
 
         String updatedUserData = jsonEncode(userMap);
         print('updatedUserData $updatedUserData');
