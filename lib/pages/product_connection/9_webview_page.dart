@@ -84,11 +84,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (String url) {
-            userInfoInit();
+          onPageStarted: (String url) async {
+            await userInfoInit();
           },
-          onPageFinished: (String url) {
-            mqttConnect();
+          onPageFinished: (String url) async {
+            await mqttConnect();
           },
         ),
       )
@@ -150,12 +150,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   Future mqttConnect() async {
     try {
-      if (client.connectionStatus?.state == MqttConnectionState.connected) {
-        logD.i('MQTT 연결됨');
-      }
       if (client.connectionStatus?.state == MqttConnectionState.disconnected) {
         await client.connect();
-        logD.i('MQTT 연결 완료');
       }
     } catch (e) {
       logD.e('Error: $e');
@@ -165,7 +161,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// MQTT Callback method
   void onConnected() {
-    logD.i('MQTT 연결 성공');
+    logD.i('Callback method result : MQTT 연결 성공');
     subscribe();
   }
 
@@ -317,6 +313,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
     if (message.message == "petId") {
       await trackPetId();
+      await mqttConnect();
     }
 
     if (message.message == "backButtonClicked") {
@@ -486,7 +483,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     initializePage();
-    webViewInit();
   }
 
   @override

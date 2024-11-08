@@ -122,6 +122,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
                 ],
               )
           ),
+          boxH(12),
         ],
       ),
       bottomButton: BasicButton(

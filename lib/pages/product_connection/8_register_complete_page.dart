@@ -101,8 +101,8 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
           ),
           BasicButton(
             text: "반려동물 프로필 등록",
-            onPressed: () => {
-              registerDeviceInfo(),
+            onPressed: () async {
+              await registerDeviceInfo();
               if (mounted)
                 {
                   Navigator.pushReplacement(
@@ -113,7 +113,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
                         backPage: const InitialDeviceHomePage(),
                       ),
                     ),
-                  )
+                  );
                 }
             },
           ),
