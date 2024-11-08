@@ -19,7 +19,6 @@ class ConnectSdkService {
   final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController<List<Map<String, dynamic>>>.broadcast();
   final StreamController<String> logStreamController = StreamController<String>.broadcast();
 
-
   StreamSubscription? logSubscription;
 
   final List<Map<String, dynamic>> devices = [];
