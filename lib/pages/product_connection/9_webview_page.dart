@@ -294,6 +294,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   Future jsChannelListener(message) async {
+    if (message.message == "setMobileStatusBarHeight") {
+      controller.runJavaScript(
+          "window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
+    }
     if (message.message.startsWith('data:image/png')) {
       return await saveFile(message.message, 'png');
     }
