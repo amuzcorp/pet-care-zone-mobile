@@ -246,7 +246,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   Future<void> navigateToPincodeCheckPage() async {
     _closeDropdown();
-    wifiService.scanTimer?.cancel();
+    connectSdkService.stopScan();
     Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
   }
 
