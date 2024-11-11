@@ -57,6 +57,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool isWebViewActive = true;
   bool isShowBottomSheet = false;
   bool isShowSubBottomSheet = false;
+  bool isShowModal = false;
 
   Widget buildWebViewWidget() {
     if (WebViewPlatform.instance is AndroidWebViewPlatform) {
@@ -330,6 +331,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       isShowSubBottomSheet = true;
       return;
     }
+    if (message.message == "showModal") {
+      isShowModal = true;
+      return;
+    }
 
     if (message.message == "closeBottomSheet") {
       isShowBottomSheet = false;
@@ -337,6 +342,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
     if (message.message == "closeSubBottomSheet") {
       isShowSubBottomSheet = false;
+      return;
+    }
+    if (message.message == "closeModal") {
+      isShowModal = false;
       return;
     }
 
@@ -413,6 +422,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       final currentUrl = await controller.currentUrl();
       if (currentUrl == null) {
         return true;
+      }
+      if (isShowModal) {
+        controller.runJavaScript("closeModalAtFlutter();");
+        return false;
       }
       if (isShowSubBottomSheet) {
         controller.runJavaScript("closeSubBottomSheetAtFlutter();");

@@ -7,6 +7,8 @@ class IconConstants {
       'assets/icons/product_connection/device_name_edit_product.png';
   static const String arrowBack =
       'assets/icons/product_connection/ic_arrow_back.svg';
+  static const String circleInfo =
+      'assets/icons/product_connection/ic_info.svg';
   static const String close = 'assets/icons/product_connection/ic_close.svg';
   static const String cameraShutter = 'assets/icons/btn_camera_shutter_n.svg';
 }

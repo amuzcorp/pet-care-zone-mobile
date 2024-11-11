@@ -130,23 +130,39 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                 child: Column(
                   children: [
                     Container(
-                      margin: const EdgeInsets.symmetric(vertical: 10),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(
-                            minWidth: 80, minHeight: 80), // constraints
-                        icon: SvgPicture.asset(
-                          IconConstants.cameraShutter,
-                        ),
-                        onPressed: () async {
-                          String? base64 = await _takePicture();
-                          if (base64 != null && mounted) {
-                            Navigator.of(context).pop();
-                            widget.cameraShutFunction(base64);
-                          }
-                        },
-                      ),
-                    ),
+                        width: MediaQuery.of(context).size.width,
+                        margin: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+                        child: Stack(
+                          alignment: Alignment.centerRight,
+                          children: [
+                            Center(
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(
+                                    minWidth: 80, minHeight: 80), // constraints
+                                icon: SvgPicture.asset(
+                                  IconConstants.cameraShutter,
+                                ),
+                                onPressed: () async {
+                                  String? base64 = await _takePicture();
+                                  if (base64 != null && mounted) {
+                                    Navigator.of(context).pop();
+                                    widget.cameraShutFunction(base64);
+                                  }
+                                },
+                              ),
+                            ),
+                            IconButton(
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(
+                                  minWidth: 32, minHeight: 32), // constraints
+                              icon: SvgPicture.asset(
+                                IconConstants.circleInfo,
+                              ),
+                              onPressed: () {},
+                            ),
+                          ],
+                        )),
                     Container(
                       margin: const EdgeInsets.only(top: 20),
                       width: 200,
