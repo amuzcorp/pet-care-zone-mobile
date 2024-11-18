@@ -365,13 +365,12 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
     if (message.message.startsWith("openAICamAtFlutter:")) {
       String type = message.message.split(':')[1];
-      Map titles = {"patella": "슬개골", "oral": "구강", "bmi": "비만도"};
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => AIHealthCameraPage(
-                  type: titles[type],
+                  type: type,
                   cameraShutFunction: (String base64) {
                     _uploadPicture(base64);
                   })),

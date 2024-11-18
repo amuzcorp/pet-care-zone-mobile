@@ -18,6 +18,8 @@ class AIHealthCameraPage extends StatefulWidget {
 }
 
 class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
+  Map titles = {"patella": "슬개골", "oral": "구강", "bmi": "비만도"};
+
   final List<String> mode = ["가이드", "기본"];
   CameraController? controller;
   late List<CameraDescription> _cameras;
@@ -70,7 +72,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
         appBar: AppBar(
           toolbarHeight: 56.0,
           title: Text(
-            "${widget.type} AI 건강 체크",
+            "${titles[widget.type]} AI 건강 체크",
             style: const TextStyle(
                 fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.left,
@@ -95,7 +97,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
                 child: _cameraPreviewWidget()),
-            if (currentMode == mode[0])
+            if (widget.type == "patella" && currentMode == mode[0])
               Column(
                 children: [
                   SizedBox(
@@ -163,73 +165,76 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                             ),
                           ],
                         )),
-                    Container(
-                      margin: const EdgeInsets.only(top: 20),
-                      width: 200,
-                      height: 32,
-                      decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(50)),
-                      child: Stack(
-                        children: [
-                          Container(
-                            height: 32,
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    width: 1, color: const Color(0xff606C80)),
-                                borderRadius: BorderRadius.circular(50)),
-                          ),
-                          AnimatedContainer(
-                            width: 200,
-                            height: 32,
-                            alignment: currentMode == mode[0]
-                                ? Alignment.centerLeft
-                                : Alignment.centerRight,
-                            decoration: BoxDecoration(
-                                color: Colors.transparent,
-                                borderRadius: BorderRadius.circular(50)),
-                            duration: const Duration(milliseconds: 200),
-                            child: Container(
-                              width: 100,
+                    if (widget.type == "patella")
+                      Container(
+                        margin: const EdgeInsets.only(top: 20),
+                        width: 200,
+                        height: 32,
+                        decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(50)),
+                        child: Stack(
+                          children: [
+                            Container(
                               height: 32,
                               decoration: BoxDecoration(
-                                  color: const Color(0xff0A6CFF),
+                                  border: Border.all(
+                                      width: 1, color: const Color(0xff606C80)),
                                   borderRadius: BorderRadius.circular(50)),
                             ),
-                          ),
-                          SizedBox(
-                            height: 32,
-                            child: Row(
-                              children: mode.map<Widget>((e) {
-                                return Flexible(
-                                  fit: FlexFit
-                                      .tight, // 모든 항목이 동일한 비율로 공간을 차지하도록 설정
-                                  child: TextButton(
-                                    style: ButtonStyle(
-                                        overlayColor: MaterialStateProperty.all(
-                                            Colors.transparent)),
-                                    onPressed: () => {
-                                      setState(() {
-                                        currentMode = e;
-                                      }),
-                                    },
-                                    child: Text(
-                                      e,
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.white,
-                                      ),
-                                      textAlign: TextAlign.center, // 텍스트를 중앙 정렬
-                                    ),
-                                  ),
-                                );
-                              }).toList(), // map을 리스트로 변환
+                            AnimatedContainer(
+                              width: 200,
+                              height: 32,
+                              alignment: currentMode == mode[0]
+                                  ? Alignment.centerLeft
+                                  : Alignment.centerRight,
+                              decoration: BoxDecoration(
+                                  color: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(50)),
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                width: 100,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                    color: const Color(0xff0A6CFF),
+                                    borderRadius: BorderRadius.circular(50)),
+                              ),
                             ),
-                          ),
-                        ],
+                            SizedBox(
+                              height: 32,
+                              child: Row(
+                                children: mode.map<Widget>((e) {
+                                  return Flexible(
+                                    fit: FlexFit
+                                        .tight, // 모든 항목이 동일한 비율로 공간을 차지하도록 설정
+                                    child: TextButton(
+                                      style: ButtonStyle(
+                                          overlayColor:
+                                              MaterialStateProperty.all(
+                                                  Colors.transparent)),
+                                      onPressed: () => {
+                                        setState(() {
+                                          currentMode = e;
+                                        }),
+                                      },
+                                      child: Text(
+                                        e,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign:
+                                            TextAlign.center, // 텍스트를 중앙 정렬
+                                      ),
+                                    ),
+                                  );
+                                }).toList(), // map을 리스트로 변환
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),
