@@ -26,13 +26,15 @@ class FirebaseService {
       provisional: false,
       sound: true,
     );
+  }
 
+  static Future setFcmToken() async {
     fcmToken = await firebaseMessaging.getToken();
     final String? androidId = await androidIdPlugin.getId();
     final prefs = await SharedPreferences.getInstance();
 
     await prefs.setStringList('fcm_info', [androidId!, fcmToken!]);
-    print("fcm_info: ${prefs.getStringList('fcm_info')}");
+    logD.i("fcm_info: ${prefs.getStringList('fcm_info')}");
   }
 
   static Future fcmRequestPermission() async {

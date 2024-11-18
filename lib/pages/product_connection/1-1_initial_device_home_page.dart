@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
@@ -32,14 +33,18 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
+  String fcmToken = "";
   bool isRegistered = false;
   bool isDeviceReady = false;
+  bool isTapOn = false;
 
   List<String> logMessages = [];
 
   Future sendMessage() async {
     final prefs = await SharedPreferences.getInstance();
     print("fcm_info: ${prefs.getStringList('fcm_info')}");
+    fcmToken = prefs.getStringList('fcm_info')![1];
+    print('fcmToken $fcmToken');
     return await FirebaseService.send(title: 'Pet Care Zone', message: '안녕하세요! 펫케어존이에요.');
   }
 
@@ -91,6 +96,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   @override
   void initState() {
     super.initState();
+    FirebaseService.setFcmToken();
+    sendMessage();
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
     connectToDevice();
@@ -104,7 +111,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    sendMessage();
     return BasicPage(
       showAppBar: false,
       backgroundImage: Image.asset(
@@ -117,11 +123,19 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
         children: [
           Row(
             children: [
-              Text(
-                '홈',
-                style: TextStyle(
-                  fontSize: FontConstants.descriptionTextSize,
-                  fontWeight: FontWeight.bold,
+              InkWell(
+                onTap: () async {
+                  setState(() {
+                    isTapOn = !isTapOn;
+                  });
+                  print('isTapOn $isTapOn');
+                },
+                child: Text(
+                  '홈',
+                  style: TextStyle(
+                    fontSize: FontConstants.descriptionTextSize,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -135,6 +149,14 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
             destinationPage: destinationPage,
             isRegistered: isRegistered,
           ),
+          boxH(10),
+          if (isTapOn) SelectableText(
+            fcmToken,
+            style: TextStyle(
+              fontSize: FontConstants.descriptionTextSize,
+              fontWeight: FontWeight.normal, // 원하는 스타일 적용
+            ),
+          )
         ],
       ),
     );
