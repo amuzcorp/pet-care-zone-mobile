@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
@@ -45,7 +44,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     print("fcm_info: ${prefs.getStringList('fcm_info')}");
     fcmToken = prefs.getStringList('fcm_info')![1];
     print('fcmToken $fcmToken');
-    return await FirebaseService.send(title: 'Pet Care Zone', message: '안녕하세요! 펫케어존이에요.');
+    return await FirebaseService.send(
+        title: 'Pet Care Zone', message: '안녕하세요! 펫케어존이에요.');
   }
 
   Future connectToDevice() async {
@@ -54,7 +54,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
       connectSdkService.setupListener();
       await deviceService.deviceInitialize();
       isDeviceReady = true;
-      connectSdkService.logStreamController.add("device connection is completed.");
+      connectSdkService.logStreamController
+          .add("device connection is completed.");
     }
   }
 
@@ -62,16 +63,22 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     UserModel? userInfo = await userService.getUserInfo();
     if (userInfo != null) {
       String userId = userInfo.userId;
-      String? deviceId = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceId : "";
-      int petId = userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
-      deviceName = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceName : "";
+      String? deviceId = userInfo.deviceList.isNotEmpty
+          ? userInfo.deviceList.first.deviceId
+          : "";
+      int petId =
+          userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
+      deviceName = userInfo.deviceList.isNotEmpty
+          ? userInfo.deviceList.first.deviceName
+          : "";
       final prefs = await SharedPreferences.getInstance();
 
       await prefs.setString('userId', userId);
       await prefs.setInt('petId', petId);
       await prefs.setString('deviceId', deviceId!);
 
-      logD.i('[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\ndeviceName: $deviceName');
+      logD.i(
+          '[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\ndeviceName: $deviceName');
 
       if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
         setState(() {
@@ -150,13 +157,14 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
             isRegistered: isRegistered,
           ),
           boxH(10),
-          if (isTapOn) SelectableText(
-            fcmToken,
-            style: TextStyle(
-              fontSize: FontConstants.descriptionTextSize,
-              fontWeight: FontWeight.normal, // 원하는 스타일 적용
-            ),
-          )
+          if (isTapOn)
+            SelectableText(
+              fcmToken,
+              style: TextStyle(
+                fontSize: FontConstants.descriptionTextSize,
+                fontWeight: FontWeight.normal, // 원하는 스타일 적용
+              ),
+            )
         ],
       ),
     );
