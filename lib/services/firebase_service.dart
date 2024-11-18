@@ -105,7 +105,7 @@ class FirebaseService {
       'message': {
         'token': fcmToken, //기기 토큰
         'data': { //payload 데이터 구성
-          'via': 'FlutterFire Cloud Messaging!!!',
+          'petInfo': 'please give me pet data',
         },
         'notification': {
           'title': title, //푸시 알림 제목

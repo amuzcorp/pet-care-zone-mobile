@@ -3,6 +3,7 @@ import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/cards/initial_device_register_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,12 +29,19 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final UserService userService = UserService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
+  final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
   bool isRegistered = false;
   bool isDeviceReady = false;
 
   List<String> logMessages = [];
+
+  Future sendMessage() async {
+    final prefs = await SharedPreferences.getInstance();
+    print("fcm_info: ${prefs.getStringList('fcm_info')}");
+    return await FirebaseService.send(title: 'Pet Care Zone', message: '안녕하세요! 펫케어존이에요.');
+  }
 
   Future connectToDevice() async {
     final webOSDeviceInfo = await deviceService.getWebOSDeviceInfo();
@@ -96,6 +104,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    sendMessage();
     return BasicPage(
       showAppBar: false,
       backgroundImage: Image.asset(

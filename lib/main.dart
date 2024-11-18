@@ -63,7 +63,8 @@ void main() async {
       FirebaseService.showSimpleNotification(
           title: message.notification!.title!,
           body: message.notification!.body!,
-          payload: payloadData);
+          payload: payloadData,
+      );
     }
   });
   //메시지 상호작용 함수 호출
