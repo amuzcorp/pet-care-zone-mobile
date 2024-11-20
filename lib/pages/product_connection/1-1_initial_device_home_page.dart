@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
@@ -33,6 +32,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
+  String mobileId = "";
   String fcmToken = "";
   bool isRegistered = false;
   bool isDeviceReady = false;
@@ -40,12 +40,12 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   List<String> logMessages = [];
 
-  Future sendMessage() async {
+  Future getFcmInfo() async {
     final prefs = await SharedPreferences.getInstance();
     print("fcm_info: ${prefs.getStringList('fcm_info')}");
+    mobileId = prefs.getStringList('fcm_info')![0];
     fcmToken = prefs.getStringList('fcm_info')![1];
-    print('fcmToken $fcmToken');
-    return await FirebaseService.send(title: 'Pet Care Zone', message: '안녕하세요! 펫케어존이에요.');
+    return await userService.regMobileToken(mobileId, 1, fcmToken);
   }
 
   Future connectToDevice() async {
@@ -91,13 +91,13 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     validateUserInfo();
+    getFcmInfo();
   }
 
   @override
   void initState() {
     super.initState();
     FirebaseService.setFcmToken();
-    sendMessage();
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
     connectToDevice();
@@ -150,12 +150,17 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
             isRegistered: isRegistered,
           ),
           boxH(10),
-          if (isTapOn) SelectableText(
-            fcmToken,
-            style: TextStyle(
-              fontSize: FontConstants.descriptionTextSize,
-              fontWeight: FontWeight.normal, // 원하는 스타일 적용
-            ),
+          if (isTapOn) Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SelectableText(
+                'mobileId : $mobileId',
+              ),
+              boxH(10),
+              SelectableText(
+                'fcmToken: $fcmToken',
+              )
+            ],
           )
         ],
       ),
