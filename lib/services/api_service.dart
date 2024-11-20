@@ -80,6 +80,25 @@ class ApiService {
     );
   }
 
+  Future<Map<String, dynamic>?> regMobileToken({
+    required String mobileId,
+    required int mobileType,
+    required String mobileToken,
+  }) async {
+    Map<String, dynamic> requestBody = {
+      'mobileId': mobileId,
+      'mobileType': mobileType,
+      'mobileToken': mobileToken,
+    };
+
+    return await request(
+      url: ApiUrls.regMobileToken,
+      body: requestBody,
+      method: 'POST',
+      isToken: true,
+    );
+  }
+
   Future<Map<String, dynamic>?> postDeviceInfo({
     required String deviceId,
     required String deviceName,

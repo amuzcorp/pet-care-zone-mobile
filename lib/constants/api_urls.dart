@@ -5,8 +5,11 @@ class ApiUrls {
   static const String loginUrl = '$baseUrl/member/login';
   static const String deviceUrl = '$baseUrl/pet/iot/device';
   static const String getPetProfile = '$baseUrl/pet/profile';
+  static const String regMobileToken = '$baseUrl/member/mobile';
 
   static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app/';
+  // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview-rosy.vercel.app/';
+
 
   static const String lunaWifiStatusUrl = 'ssap://com.webos.service.wifi/getstatus';
   static const String getWifiProfileList = 'ssap://com.webos.service.wifi/getprofilelist';

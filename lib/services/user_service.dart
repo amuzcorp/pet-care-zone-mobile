@@ -59,6 +59,19 @@ class UserService {
     }
   }
 
+  Future<Map<String, dynamic>?> regMobileToken(mobileId, mobileType, mobileToken) async {
+    logD.i('[POST] regMobileToken - $mobileId/$mobileType/$mobileToken');
+    try {
+      await apiService.regMobileToken(
+        mobileId: mobileId,
+        mobileType: mobileType,
+        mobileToken: mobileToken,
+      );
+    } catch (e) {
+      throw "FCM 정보가 올바르지 않아요.";
+    }
+  }
+
   Future<void> saveUserInfo(Map<String, dynamic> loginInfo) async {
     Uuid uuid = const Uuid();
 
