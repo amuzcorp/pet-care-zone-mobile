@@ -17,21 +17,19 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  if (message.notification != null) {
-    print("Notification Received! $message");
-    String payloadData = jsonEncode(message.data);
-    FirebaseService.showSimpleNotification(
-        title: message.notification!.title!,
-        body: message.notification!.body!,
-        payload: payloadData);
-  }
+  print("Notification Received! $message");
+  String payloadData = jsonEncode(message.data);
+  await FirebaseService.showSimpleNotification(
+    title: message.notification!.title,
+    body: message.notification!.body,
+    payload: payloadData,
+  );
 }
 
 //푸시 알림 메시지와 상호작용을 정의합니다.
 Future<void> setupInteractedMessage() async {
   //앱이 종료된 상태에서 열릴 때 getInitialMessage 호출
-  RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
+  RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
 
   if (initialMessage != null) {
     _handleMessage(initialMessage);
@@ -102,10 +100,7 @@ class MyAppState extends State<MyApp> {
         theme: ThemeData(
           fontFamily: 'LG_Smart_UI',
         ),
-        routes: {
-          '/petHome': (context) =>
-              WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl))
-        },
+        routes: {'/petHome': (context) => WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl))},
         home: FutureBuilder<Widget>(
           future: _initialPage,
           builder: (context, snapshot) {
@@ -121,6 +116,7 @@ class MyAppState extends State<MyApp> {
               return snapshot.data ?? const LoginPage();
             }
           },
-        ));
+        ),
+    );
   }
 }
