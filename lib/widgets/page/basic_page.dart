@@ -84,7 +84,7 @@ class BasicPage extends StatelessWidget {
                 child: ListView.builder(
                   itemCount: connectSdkService.collectedLogs.length, // Use the full collectedLogs list
                   itemBuilder: (context, index) {
-                    return Text('${connectSdkService.collectedLogs[index]}\n'); // Display the full log history
+                    return SelectableText('${connectSdkService.collectedLogs[index]}\n'); // Display the full log history
                   },
                 ),
               );
