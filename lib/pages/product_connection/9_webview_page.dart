@@ -59,6 +59,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool isShowSubBottomSheet = false;
   bool isShowModal = false;
 
+  Uint8List? aiPresetImg;
+
   Widget buildWebViewWidget() {
     if (WebViewPlatform.instance is AndroidWebViewPlatform) {
       return WebViewWidget.fromPlatformCreationParams(
@@ -363,14 +365,26 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       _makePhoneCall(message.message);
     }
 
+    if (message.message.startsWith("aiCamGuideImage:")) {
+      String base64String = message.message.split(':')[1];
+
+      if (base64String.isNotEmpty) {
+        aiPresetImg = base64Decode(base64String);
+      } else {
+        aiPresetImg = null;
+      }
+    }
+
     if (message.message.startsWith("openAICamAtFlutter:")) {
       String type = message.message.split(':')[1];
+
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
               builder: (context) => AIHealthCameraPage(
                   type: type,
+                  aiPresetImg: aiPresetImg,
                   cameraShutFunction: (String base64) {
                     _uploadPicture(base64);
                   })),

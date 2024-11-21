@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -9,9 +10,13 @@ import 'package:petcarezone/constants/icon_constants.dart';
 
 class AIHealthCameraPage extends StatefulWidget {
   const AIHealthCameraPage(
-      {super.key, required this.type, required this.cameraShutFunction});
+      {super.key,
+      required this.type,
+      required this.cameraShutFunction,
+      required this.aiPresetImg});
   final String type;
   final Function(String) cameraShutFunction;
+  final Uint8List? aiPresetImg;
 
   @override
   State<AIHealthCameraPage> createState() => _AIHealthCameraPageState();
@@ -97,7 +102,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                 height: MediaQuery.of(context).size.height,
                 width: MediaQuery.of(context).size.width,
                 child: _cameraPreviewWidget()),
-            if (widget.type == "patella" && currentMode == mode[0])
+            if (widget.aiPresetImg != null && currentMode == mode[0])
               Column(
                 children: [
                   SizedBox(
@@ -115,8 +120,8 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                   const SizedBox(
                     height: 9,
                   ),
-                  Image.asset(
-                    "assets/images/ai_preset_6.png",
+                  Image.memory(
+                    widget.aiPresetImg!,
                     fit: BoxFit.fill,
                     width: MediaQuery.of(context).size.width - 48,
                     height: 432,
@@ -165,7 +170,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                             ),
                           ],
                         )),
-                    if (widget.type == "patella")
+                    if (widget.aiPresetImg != null)
                       Container(
                         margin: const EdgeInsets.only(top: 20),
                         width: 200,
