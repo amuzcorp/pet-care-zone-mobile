@@ -32,8 +32,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
-  String mobileId = "";
-  String fcmToken = "";
+  String? mobileId = "";
+  String? fcmToken = "";
   bool isRegistered = false;
   bool isDeviceReady = false;
   bool isTapOn = false;
@@ -41,11 +41,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   List<String> logMessages = [];
 
   Future getFcmInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    print("fcm_info: ${prefs.getStringList('fcm_info')}");
-    mobileId = prefs.getStringList('fcm_info')![0];
-    fcmToken = prefs.getStringList('fcm_info')![1];
-    return await userService.regMobileToken(mobileId, 1, fcmToken);
+    fcmToken = await FirebaseService.firebaseMessaging.getToken();
+    mobileId = await FirebaseService.androidIdPlugin.getId();
   }
 
   Future connectToDevice() async {
@@ -91,16 +88,15 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     validateUserInfo();
+    firebaseService.setFcmToken();
     getFcmInfo();
   }
 
   @override
   void initState() {
     super.initState();
-    firebaseService.setFcmToken();
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
-    connectToDevice();
   }
 
   @override
