@@ -97,7 +97,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   @override
   void initState() {
     super.initState();
-    FirebaseService.setFcmToken();
+    firebaseService.setFcmToken();
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
     connectToDevice();
@@ -105,7 +105,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   @override
   void dispose() {
-    connectSdkService.cancelLogSubscription();
+    connectSdkService.logSubscription!.cancel();
     super.dispose();
   }
 

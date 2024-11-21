@@ -41,6 +41,8 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   void dispose() {
     pincodeController.dispose();
     pincodeTimer?.cancel();
+    messageService.messageController.close();
+    connectSdkService.logSubscription!.cancel();
     super.dispose();
   }
 

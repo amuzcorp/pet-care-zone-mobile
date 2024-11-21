@@ -75,6 +75,12 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   }
 
   @override
+  void dispose() {
+    messageService.messageController.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
