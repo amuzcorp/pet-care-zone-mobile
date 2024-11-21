@@ -70,11 +70,6 @@ class ConnectSdkService {
     });
   }
 
-  void cancelLogSubscription() {
-    logSubscription?.cancel();
-    logSubscription = null;
-  }
-
   List<String> getAllLogs() {
     return collectedLogs;
   }
