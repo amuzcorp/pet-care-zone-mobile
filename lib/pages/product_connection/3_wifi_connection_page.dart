@@ -8,6 +8,7 @@ import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
+import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 
 import '../../constants/color_constants.dart';
@@ -20,7 +21,8 @@ import '../../widgets/indicator/indicator.dart';
 import '../../widgets/page/basic_page.dart';
 
 class WifiConnectionPage extends StatefulWidget {
-  const WifiConnectionPage({super.key});
+  const WifiConnectionPage({super.key, required this.isFromWebView});
+  final bool isFromWebView;
 
   @override
   State<WifiConnectionPage> createState() => _WifiConnectionPageState();
@@ -30,10 +32,12 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final WifiService wifiService = WifiService();
   final BleService bleService = BleService();
   final MessageService messageService = MessageService();
+  final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final TextEditingController passwordController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
 
+  final Completer<void> completer = Completer<void>();
   late StreamController<String> messageController;
 
   Uint8List? macAddressArray;
@@ -44,6 +48,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   String password = "";
   bool isLoading = false;
   bool _isDropdownOpen = false;
+  bool isFromWebView = false;
 
   BluetoothCharacteristic? targetCharacteristic;
 
@@ -155,15 +160,14 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
             return CompositedTransformTarget(
               link: _layerLink,
               child: GestureDetector(
-                onTap: wifiInfos.isNotEmpty
-                    ? () {
+                onTap: wifiInfos.isNotEmpty? () {
                   if (_isDropdownOpen) {
                     _closeDropdown();
                   } else {
                     _openDropdown(wifiInfos);
                   }
                 }
-                    : null,
+                : null,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 21.0),
                   decoration: BoxDecoration(
@@ -233,7 +237,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     }
   }
 
-  // 드롭다운 닫기
   void _closeDropdown() {
     if (_overlayEntry != null) {
       _overlayEntry?.remove();
@@ -246,11 +249,12 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   Future<void> navigateToPincodeCheckPage() async {
     _closeDropdown();
-    connectSdkService.stopScan();
-    Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
+    if(mounted) {
+      Navigator.push(context, MaterialPageRoute(builder: (context) => const PincodeCheckPage()));
+    }
   }
 
-  Future<void> connectToWifi() async {
+  Future<void> connectToWifiAndDevice() async {
     if (!await checkWifiConnection()) return;
     if (!checkPassword()) return;
     if (bleService.connectedDevice == null) {
@@ -263,8 +267,25 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
-      await Future.delayed(const Duration(seconds: 7));
-      await navigateToPincodeCheckPage();
+      await Future.delayed(const Duration(seconds: 3));
+      if (isFromWebView && mounted) {
+        return Navigator.of(context).pop();
+      }
+      connectSdkService.startScan();
+      connectSdkService.setupListener();
+      connectSdkService.matchedDeviceStream.listen((devices) async {
+        print('devicesdevicesdevices $devices');
+        if (devices.isNotEmpty) {
+            await connectSdkService.matchedDeviceController.close();
+            await deviceService.saveAndInitializeWebOSDevice();
+            await navigateToPincodeCheckPage();
+            if (!completer.isCompleted) {
+              completer.complete();
+            }
+          }
+        },
+      );
+      await completer.future;
     } catch (e) {
       errorListener(e);
     } finally {
@@ -285,7 +306,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     return true;
   }
 
-  errorListener(error) async {
+  void errorListener(error) {
     String bleErrorText = e.toString().toLowerCase();
     if (bleErrorText.contains('disconnect')) {
       messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
@@ -314,10 +335,9 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   @override
   void initState() {
     super.initState();
+    isFromWebView = widget.isFromWebView;
     wifiService.initialize();
     messageController = messageService.messageController;
-    connectSdkService.setupListener();
-    connectSdkService.startScan();
     passwordController.clear();
     logD.i('BLE connectedDevice ${bleService.connectedDevice}');
   }
@@ -325,8 +345,8 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   @override
   void dispose() {
     _closeDropdown();
-    wifiService.dispose();
     connectSdkService.stopScan();
+    wifiService.dispose();
     passwordController.dispose();
     messageController.close();
     super.dispose();
@@ -370,7 +390,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       ),
       bottomButton: BasicButton(
         text: "연결하기",
-        onPressed: connectToWifi,
+        onPressed: connectToWifiAndDevice,
       ),
     );
   }
