@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:petcarezone/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/color_constants.dart';
@@ -22,7 +23,7 @@ class DeviceList extends StatefulWidget {
   _DeviceListState createState() => _DeviceListState();
 }
 
-class _DeviceListState extends State<DeviceList> {
+class _DeviceListState extends State<DeviceList> with RouteAware {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final MessageService messageService = MessageService();
@@ -37,7 +38,6 @@ class _DeviceListState extends State<DeviceList> {
       }
     }
   }
-
 
   Future<void> saveDevicesAndNavigate(Map<String, dynamic> device) async {
     widget.onLoadingChanged?.call(true);
@@ -55,11 +55,10 @@ class _DeviceListState extends State<DeviceList> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const WifiConnectionPage(),
+            builder: (context) => const WifiConnectionPage(isFromWebView: false),
           ),
         );
       }
-
     } catch (e) {
       messageService.messageController.add("Bluetooth 연결을 다시 진행 후 메뉴를 눌러주세요.");
       logD.e('Error during saveDevicesAndNavigate: $e');
@@ -68,7 +67,6 @@ class _DeviceListState extends State<DeviceList> {
       widget.onLoadingChanged?.call(false);
     }
   }
-
   @override
   void initState() {
     super.initState();

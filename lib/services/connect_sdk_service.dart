@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:petcarezone/utils/permissionCheck.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/logger.dart';
 
 class ConnectSdkService {
   static final ConnectSdkService _instance = ConnectSdkService._internal();
-
   factory ConnectSdkService() => _instance;
 
   ConnectSdkService._internal();
@@ -15,16 +15,18 @@ class ConnectSdkService {
   static const MethodChannel channel = MethodChannel('com.lge.petcarezone/discovery');
   static const MethodChannel logChannel = MethodChannel('com.lge.petcarezone/logs');
 
+  final PermissionCheck permissionCheck = PermissionCheck();
   final StreamController<List<Map<String, dynamic>>> deviceStreamController = StreamController<List<Map<String, dynamic>>>.broadcast();
   final StreamController<List<Map<String, dynamic>>> bleStreamController = StreamController<List<Map<String, dynamic>>>.broadcast();
+  final StreamController<Map<String, dynamic>> matchedDeviceController = StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<String> logStreamController = StreamController<String>.broadcast();
 
   StreamSubscription? logSubscription;
 
   final List<Map<String, dynamic>> devices = [];
   List<Map<String, dynamic>> bleList = [];
-  Map<String, dynamic> matchedWebosDevice = {};
   List<String> collectedLogs = [];
+  Map<String, dynamic> matchedWebosDevice = {};
 
   final String log = "";
   Timer? scanTimer;
@@ -35,13 +37,23 @@ class ConnectSdkService {
     yield* deviceStreamController.stream;
   }
 
+  Stream<List<Map<String, dynamic>>> get bleStream async* {
+    yield bleList;
+    yield* bleStreamController.stream;
+  }
+
+  Stream<Map<String, dynamic>> get matchedDeviceStream async* {
+    yield matchedWebosDevice;
+    yield* matchedDeviceController.stream;
+  }
+
   Stream<String> get logStream async* {
     yield* logStreamController.stream;
   }
 
-  Stream<List<Map<String, dynamic>>> get bleStream async* {
-    yield bleList;
-    yield* bleStreamController.stream;
+  void updateMatchedDevice(Map<String, dynamic> device) {
+    matchedWebosDevice = device;
+    matchedDeviceController.add(device);
   }
 
   void setupLogListener() async {
@@ -76,20 +88,22 @@ class ConnectSdkService {
 
   findMatchedDevice() {
     if (bleList.isNotEmpty && devices.isNotEmpty) {
-      final matchedDevice = devices.firstWhere((webOSDevice) {
-        return bleList.any((bleDevice) {
-          return webOSDevice['friendlyName'].trim() == bleDevice['platformName'].trim();
-        });
-      }, orElse: () => {});
-      matchedWebosDevice = matchedDevice;
+      final matchedDevice = devices.firstWhere((webOSDevice) => bleList.any((bleDevice) =>
+        webOSDevice['friendlyName'].trim() == bleDevice['platformName'].trim()),
+        orElse: () => {},
+      );
+      updateMatchedDevice(matchedDevice);
+      print('matchedWebosDevice $matchedWebosDevice');
     }
   }
+
 
   Future<void> startScan() async {
     scanTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
       try {
         logD.i("Scanning...");
         findMatchedDevice();
+
         await channel.invokeMethod('startScan');
 
       } on PlatformException catch (e) {
@@ -147,6 +161,8 @@ class ConnectSdkService {
             }
           }
         }
+      } else {
+        permissionCheck.requestPermission();
       }
 
       if (!bleStreamController.isClosed) {
@@ -164,7 +180,6 @@ class ConnectSdkService {
       } on PlatformException catch (e) {
         logD.w("Failed to stop scan: '${e.message}'.");
       }
-      logD.i("Scan timer cancelled");
     } else {
       logD.w("Scan timer was not active or already cancelled");
     }

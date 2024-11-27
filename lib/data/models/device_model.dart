@@ -56,10 +56,14 @@ class DeviceModel {
         'advName': scanResult.advertisementData.advName,
         'txPowerLevel': scanResult.advertisementData.txPowerLevel,
         'connectable': scanResult.advertisementData.connectable,
-        'manufacturerData': scanResult.advertisementData.manufacturerData.map((key, value) =>
-            MapEntry(key.toString(), value)),
-        'serviceData': scanResult.advertisementData.serviceData.map((key, value) =>
-            MapEntry(key.toString(), value)),
+        'manufacturerData': scanResult.advertisementData.manufacturerData
+            .map((key, value) =>
+            MapEntry(key.toString(), value),
+        ),
+        'serviceData': scanResult.advertisementData.serviceData
+            .map((key, value) =>
+            MapEntry(key.toString(), value),
+        ),
         'serviceUuids': scanResult.advertisementData.serviceUuids
             .map((uuid) => uuid.toString())
             .toList(),

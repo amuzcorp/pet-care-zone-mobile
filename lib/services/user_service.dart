@@ -101,6 +101,12 @@ class UserService {
     return false;
   }
 
+  Future<bool?> getUserPermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    final permissionStatus = prefs.getBool('permission');
+    return permissionStatus;
+  }
+
   Future<UserModel?> getUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     final userJson = prefs.getString('user');

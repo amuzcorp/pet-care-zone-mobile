@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
@@ -6,6 +7,7 @@ import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/cards/initial_device_register_card.dart';
+import 'package:petcarezone/widgets/dialog/permission_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/api_urls.dart';
@@ -26,75 +28,77 @@ class InitialDeviceHomePage extends StatefulWidget {
 }
 
 class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
+  final PermissionCheckDialog permissionCheckDialog = PermissionCheckDialog();
   final UserService userService = UserService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final DeviceService deviceService = DeviceService();
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
-  String? mobileId = "";
   String? fcmToken = "";
   bool isRegistered = false;
   bool isDeviceReady = false;
   bool isTapOn = false;
 
-  List<String> logMessages = [];
-
   Future getFcmInfo() async {
-    fcmToken = await FirebaseService.firebaseMessaging.getToken();
-    mobileId = await FirebaseService.androidIdPlugin.getId();
-  }
-
-  Future connectToDevice() async {
-    final webOSDeviceInfo = await deviceService.getWebOSDeviceInfo();
-    if (webOSDeviceInfo.isNotEmpty && !isDeviceReady) {
-      connectSdkService.setupListener();
-      await deviceService.deviceInitialize();
-      isDeviceReady = true;
-      connectSdkService.logStreamController.add("device connection is completed.");
-    }
+    await FirebaseMessaging.instance.getToken().then((token) {
+      if (token != null) {
+        fcmToken = token;
+        firebaseService.setFcmToken(token);
+        logD.i('fcm Token in LifeCycleChecker : $token');
+      }
+    }).catchError((err) {
+      logD.e("초기 토큰 가져오기 중 오류 발생: $err");
+    });
   }
 
   Future<void> validateUserInfo() async {
     UserModel? userInfo = await userService.getUserInfo();
-    if (userInfo != null) {
-      String userId = userInfo.userId;
-      String? deviceId = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceId : "";
-      int petId = userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
-      deviceName = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceName : "";
-      final prefs = await SharedPreferences.getInstance();
+    String userId = userInfo!.userId;
+    String? deviceId = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceId : "";
+    int petId = userInfo.petList.isNotEmpty ? userInfo.petList.first.petId : 0;
+    deviceName = userInfo.deviceList.isNotEmpty ? userInfo.deviceList.first.deviceName : "";
+    final prefs = await SharedPreferences.getInstance();
 
-      await prefs.setString('userId', userId);
-      await prefs.setInt('petId', petId);
-      await prefs.setString('deviceId', deviceId!);
+    await prefs.setString('userId', userId);
+    await prefs.setInt('petId', petId);
+    await prefs.setString('deviceId', deviceId!);
 
-      logD.i('[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\ndeviceName: $deviceName');
+    logD.i('[Userinfo]\nuserId:$userId\npetId: $petId\ndeviceId: $deviceId\ndeviceName: $deviceName');
 
-      if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
-        setState(() {
-          isRegistered = true;
-          destinationPage = WebViewPage(
-            uri: Uri.parse(ApiUrls.webViewUrl),
-            backPage: const InitialDeviceHomePage(),
-          );
-        });
-      }
-    } else {
-      logD.e('User info is null');
+    if (userId.isNotEmpty && petId != 0 && deviceId.isNotEmpty) {
+      setState(() {
+        isRegistered = true;
+        destinationPage = WebViewPage(
+          uri: Uri.parse(ApiUrls.webViewUrl),
+          backPage: const InitialDeviceHomePage(),
+        );
+      });
     }
+  }
+
+  Future userInfoLoad() async {
+    await getFcmInfo();
+    validateUserInfo();
+    firebaseService.refreshFcmToken();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    validateUserInfo();
-    firebaseService.setFcmToken();
-    getFcmInfo();
+    userInfoLoad();
   }
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final prefs = await SharedPreferences.getInstance();
+      final isPermitted = prefs.getBool('isPermitted') ?? false;
+      if (!isPermitted && mounted) {
+        await permissionCheckDialog.showPermissionAlertDialog(context);
+      }
+    });
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
   }
@@ -124,7 +128,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
                   setState(() {
                     isTapOn = !isTapOn;
                   });
-                  print('isTapOn $isTapOn');
                 },
                 child: Text(
                   '홈',
@@ -149,10 +152,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
           if (isTapOn) Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SelectableText(
-                'mobileId : $mobileId',
-              ),
-              boxH(10),
               SelectableText(
                 'fcmToken: $fcmToken',
               )

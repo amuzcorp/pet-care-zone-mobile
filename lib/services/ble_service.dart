@@ -16,7 +16,6 @@ class BleService {
 
   Uint8List? macAddressArray;
   String? macAddressWithSeparatorString = "";
-
   Future getCharacteristics() async {
     if (connectedDevice != null) {
       await Future.delayed(const Duration(seconds: 1));

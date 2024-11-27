@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
+import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/utils/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/models/device_model.dart';
@@ -11,6 +12,30 @@ class DeviceService {
   static const platform = MethodChannel('com.lge.petcarezone/discovery');
   final ApiService apiService = ApiService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
+  final MessageService messageService = MessageService();
+
+  Future saveAndInitializeWebOSDevice() async {
+    final matchedWebosDevice = connectSdkService.matchedWebosDevice;
+    logD.i('matchedWebosDevice $matchedWebosDevice');
+
+    if (matchedWebosDevice.isNotEmpty) {
+      /// DeviceModel 생성
+      final deviceModel = DeviceModel(
+        serialNumber: matchedWebosDevice['modelNumber'],
+        deviceName: matchedWebosDevice['friendlyName'],
+        deviceIp: matchedWebosDevice['lastKnownIPAddress'],
+      );
+
+      /// webOS whole Data 저장
+      await saveWebOSDeviceInfo(matchedWebosDevice);
+      await deviceInitialize();
+      /// webOS necessary Data만 저장
+      await saveDeviceInfo(deviceModel);
+      connectSdkService.matchedDeviceController.close();
+    } else {
+      messageService.messageController.add("기기 연결에 실패했어요. 뒤로 이동해\nWi-Fi 연결을 다시 시도해 주세요.");
+    }
+  }
 
   Future deviceInitialize() async {
     final webOSDeviceInfo = await getWebOSDeviceInfo();
@@ -64,17 +89,13 @@ class DeviceService {
   }
 
   Future<Map<String, dynamic>> getWebOSDeviceInfo() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String? deviceJson = prefs.getString('webos_device_info');
-      if (deviceJson != null && deviceJson.isNotEmpty) {
-        Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
-        return deviceMap;
-      } else {
-        logD.e('No device info found in SharedPreferences');
-      }
-    } catch (e) {
-      logD.e('Error fetching device info: $e');
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceJson = prefs.getString('webos_device_info');
+    if (deviceJson != null && deviceJson.isNotEmpty) {
+      Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
+      return deviceMap;
+    } else {
+      logD.e('No device info found in SharedPreferences');
     }
     return {};
   }
@@ -86,120 +107,72 @@ class DeviceService {
   }
 
   Future<Map<String, dynamic>> getBleInfo() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String? deviceJson = prefs.getString('ble_info');
-      if (deviceJson != null && deviceJson.isNotEmpty) {
-        Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
-        return deviceMap;
-      } else {
-        logD.e('No ble info found in SharedPreferences');
-      }
-    } catch (e) {
-      logD.e('Error fetching device info: $e');
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceJson = prefs.getString('ble_info');
+    if (deviceJson != null && deviceJson.isNotEmpty) {
+      Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
+      return deviceMap;
+    } else {
+      logD.e('No ble info found in SharedPreferences');
     }
     return {};
-  }
-
-  Future<String?> getDeviceIp() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String? deviceJson = prefs.getString('selected_device');
-      if (deviceJson != null && deviceJson.isNotEmpty) {
-        Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
-        return deviceMap['deviceIp'];
-      }
-    } catch (e) {
-      logD.e('Error retrieving device ID: $e');
-    }
-    return null;
   }
 
   Future<void> saveLocalDeviceInfo(Map<String, dynamic> deviceInfo) async {
     final prefs = await SharedPreferences.getInstance();
     dynamic userData = prefs.getString('user');
+    Map<String, dynamic> userMap = jsonDecode(userData);
+    userMap['deviceList'].add(deviceInfo);
 
-    if (userData != null) {
-      try {
-        Map<String, dynamic> userMap = jsonDecode(userData);
-        userMap['deviceList'].add(deviceInfo);
-
-        String updatedUserData = jsonEncode(userMap);
-        await prefs.setString('user', updatedUserData);
-      } catch (e) {
-        logD.e('Error decoding or updating user data: $e');
-      }
-    }
+    String updatedUserData = jsonEncode(userMap);
+    await prefs.setString('user', updatedUserData);
   }
 
   Future<void> saveDeviceInfo(DeviceModel device) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String deviceJson = jsonEncode(device.toJson());
-      logD.i('saved device\n$deviceJson');
-
-      bool isSaved = await prefs.setString('selected_device', deviceJson);
-
-      if (isSaved) {
-        logD.i('Device saved successfully');
-      } else {
-        logD.e('Failed to save device');
-      }
-    } catch (e) {
-      logD.e('Error saving device: $e');
+    final prefs = await SharedPreferences.getInstance();
+    String deviceJson = jsonEncode(device.toJson());
+    logD.i('saved device\n$deviceJson');
+    bool isSaved = await prefs.setString('selected_device', deviceJson);
+    if (isSaved) {
+      logD.i('Device saved successfully');
+    } else {
+      logD.e('Failed to save device');
     }
   }
 
   Future<DeviceModel?> getDeviceInfo() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      String? deviceJson = prefs.getString('selected_device');
-      logD.i('deviceJson $deviceJson');
-      if (deviceJson != null && deviceJson.isNotEmpty) {
-        Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
-        return DeviceModel.fromJson(deviceMap);
-      }
-    } catch (e) {
-      logD.e('Error fetching device info: $e');
+    final prefs = await SharedPreferences.getInstance();
+    String? deviceJson = prefs.getString('selected_device');
+    logD.i('deviceJson $deviceJson');
+    if (deviceJson != null && deviceJson.isNotEmpty) {
+      Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
+      return DeviceModel.fromJson(deviceMap);
     }
-    return null;
   }
 
   Future<Map<String, dynamic>?> registerDevice(deviceId, deviceName, serialNumber) async {
-    try {
-      final result = await apiService.postDeviceInfo(
-        deviceId: deviceId,
-        deviceName: deviceName,
-        serialNumber: serialNumber,
-      );
-      logD.i('Register Result : $result');
-      return result;
-    } catch (e) {
-      logD.e('Error  device: $e');
-    }
+    final result = await apiService.postDeviceInfo(
+      deviceId: deviceId,
+      deviceName: deviceName,
+      serialNumber: serialNumber,
+    );
+    logD.i('Register Result : $result');
+    return result;
   }
 
   Future<Map<String, dynamic>?> modifyDevice(deviceId, deviceName, serialNumber) async {
-    try {
-      return await apiService.postDeviceInfo(
-        deviceId: deviceId,
-        deviceName: deviceName,
-        serialNumber: serialNumber,
-      );
-    } catch (e) {
-      logD.e('Error device: $e');
-    }
+    return await apiService.postDeviceInfo(
+      deviceId: deviceId,
+      deviceName: deviceName,
+      serialNumber: serialNumber,
+    );
   }
 
   Future<Map<String, dynamic>?> provisionDevice(String deviceId) async {
-    try {
-      final result = await apiService.postDeviceProvision(
-        deviceId: deviceId,
-      );
-      logD.i('Provision Result : $result');
-      return result;
-    } catch (e) {
-      logD.e('Error provisioning device: $e');
-    }
+    final result = await apiService.postDeviceProvision(
+      deviceId: deviceId,
+    );
+    logD.i('Provision Result : $result');
+    return result;
   }
 }

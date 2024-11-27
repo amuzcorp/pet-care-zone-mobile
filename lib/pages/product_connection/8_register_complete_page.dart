@@ -27,7 +27,6 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   String deviceName = '제품 닉네임';
   String modelNumber = '';
   String guideMessage = '제품 이름을 바꿀 수 있어요.';
-  List<String> logMessages = [];
 
   Future getWebOSDeviceInfo() async {
     final prefs = await SharedPreferences.getInstance();
@@ -44,9 +43,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
         deviceName,
         modelNumber,
       );
-      await deviceService.provisionDevice(
-        deviceId!,
-      );
+      await deviceService.provisionDevice(deviceId!);
       await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
 
     } else {

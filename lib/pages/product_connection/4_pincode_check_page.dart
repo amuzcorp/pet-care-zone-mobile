@@ -29,31 +29,6 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   final LunaService lunaService = LunaService();
   final MessageService messageService = MessageService();
 
-  Future saveWebOSDeviceInfo() async {
-    final matchedWebosDevice = connectSdkService.matchedWebosDevice;
-
-    logD.i('matchedWebosDevice $matchedWebosDevice');
-
-    if (matchedWebosDevice.isNotEmpty) {
-      /// DeviceModel 생성
-      final deviceModel = DeviceModel(
-        serialNumber: matchedWebosDevice['modelNumber'],
-        deviceName: matchedWebosDevice['friendlyName'],
-        deviceIp: matchedWebosDevice['lastKnownIPAddress'],
-      );
-
-      /// webOS Whole Data 저장
-      await deviceService.saveWebOSDeviceInfo(matchedWebosDevice);
-
-      /// webOS 필요한 Data 저장
-      await deviceService.saveDeviceInfo(deviceModel);
-
-      await deviceService.deviceInitialize();
-    } else {
-      messageService.messageController.add("기기 연결에 실패했어요. 뒤로 이동해\nWi-Fi 연결을 다시 시도해 주세요.");
-    }
-  }
-
   Future requestParingKey() async {
     try {
       final deviceInfo = await deviceService.getWebOSDeviceInfo();
@@ -71,13 +46,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   @override
   void initState() {
     super.initState();
-    saveWebOSDeviceInfo();
-  }
-
-  @override
-  void dispose() {
-    messageService.messageController.close();
-    super.dispose();
+    connectSdkService.stopScan();
   }
 
   @override

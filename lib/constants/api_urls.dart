@@ -7,7 +7,9 @@ class ApiUrls {
   static const String getPetProfile = '$baseUrl/pet/profile';
   static const String regMobileToken = '$baseUrl/member/mobile';
 
-  static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app/';
+  static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
+  static const String aiHealthUrl = '$webViewUrl/ai-health';
+  static const String tempHistoryDay = '$webViewUrl/history/temperature';
   // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview-rosy.vercel.app/';
 
 

@@ -30,6 +30,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   int countdown = 0;
   bool isCountdownRunning = false;
   Timer? pincodeTimer;
+  List<String> errorList = [];
 
   @override
   void initState() {
@@ -41,13 +42,16 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   void dispose() {
     pincodeController.dispose();
     pincodeTimer?.cancel();
-    messageService.messageController.close();
-    connectSdkService.logSubscription!.cancel();
     super.dispose();
   }
 
   void handleLogEvent(String event) {
     if (mounted) {
+      if (event.contains('error')) {
+        errorList = [];
+        errorList.add(event);
+      }
+
       if (event.contains("rejected") || event.contains('invalid')) {
         messageHandler("*PIN Code가 일치하지 않습니다.");
       }
@@ -106,6 +110,16 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
           PincodeInput(pincodeController: pincodeController),
           boxH(12),
           Text("MAC : ${bleService.connectedDevice.remoteId.toString()}", style: TextStyle(color: ColorConstants.appBarIconColor),),
+          StreamBuilder<String>(
+            stream: messageService.messageController.stream,
+            builder: (context, snapshot) {
+              if (snapshot.hasData && snapshot.data != null) {
+                return Text(errorList.isNotEmpty ? errorList.toString() : "", style: TextStyle(color: ColorConstants.red));
+              } else {
+                return Text("", style: TextStyle(color: ColorConstants.red));
+              }
+            },
+          ),
           Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,

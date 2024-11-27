@@ -22,7 +22,6 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
   LunaService lunaService = LunaService();
   ConnectSdkService connectSdkService = ConnectSdkService();
   double progressValue = 0;
-  List<String> logMessages = [];
 
   Future handleDeviceRegistrationAndProvision() async {
     try {

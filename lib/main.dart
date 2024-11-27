@@ -4,10 +4,9 @@ import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
 import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/services/user_service.dart';
-import 'package:petcarezone/utils/permissionCheck.dart';
+import 'package:petcarezone/utils/routes_web.dart';
 import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 
-import 'constants/api_urls.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -29,15 +28,14 @@ class MyApp extends StatefulWidget {
 
 class MyAppState extends State<MyApp> {
   final AppLifecycleStateChecker lifecycleObserver = AppLifecycleStateChecker();
+  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
   final UserService userService = UserService();
-  final PermissionCheck permissionCheck = PermissionCheck();
   late Future<Widget> _initialPage;
 
   @override
   void initState() {
     super.initState();
     _initialPage = userService.initializeApp();
-    permissionCheck.requestPermission();
     WidgetsBinding.instance.addObserver(lifecycleObserver);
     lifecycleObserver.initializeFirebaseListeners();
   }
@@ -45,28 +43,37 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        navigatorKey: lifecycleObserver.navigatorKey,
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          fontFamily: 'LG_Smart_UI',
-        ),
-        routes: {'/petHome': (context) => WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl))},
-        home: FutureBuilder<Widget>(
-          future: _initialPage,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
-            } else if (snapshot.hasError) {
-              return const Scaffold(
-                body: Center(child: Text('Error initializing app')),
-              );
-            } else {
-              return snapshot.data ?? const LoginPage();
-            }
-          },
-        ),
+      navigatorKey: lifecycleObserver.navigatorKey,
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'LG_Smart_UI',
+      ),
+      onGenerateRoute: (RouteSettings settings) {
+        final route = routesWeb.firstWhere((route) => route.path == settings.name);
+
+        if (route.url.isNotEmpty) {
+          return MaterialPageRoute(
+            builder: (context) => WebViewPage(uri: Uri.parse(route.url)),
+          );
+        }
+        return null;
+      },
+      home: FutureBuilder<Widget>(
+        future: _initialPage,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          } else if (snapshot.hasError) {
+            return const Scaffold(
+              body: Center(child: Text('Error initializing app')),
+            );
+          } else {
+            return snapshot.data ?? const LoginPage();
+          }
+        },
+      ),
     );
   }
 }
