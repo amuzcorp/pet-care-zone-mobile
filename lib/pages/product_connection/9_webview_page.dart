@@ -12,6 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/ai_health_camera_page.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
+import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
@@ -21,7 +22,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
-import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 import '../../widgets/indicator/indicator.dart';
 
@@ -36,22 +36,19 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
-  static const MethodChannel _channel =
-      MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
   final WebViewController controller = WebViewController();
-  final connectSdkService = ConnectSdkService();
   final userService = UserService();
-  final deviceService = DeviceService();
   final lunaService = LunaService();
   final apiService = ApiService();
+  final deviceService = DeviceService();
+  int petId = 0;
   String deviceId = "";
   String userId = "";
   String stateTopic = "";
   String eventTopic = "";
-
-  int petId = 0;
   bool isWebViewWidgetInitialized = false;
   bool isDisposed = false;
   bool isWebViewActive = true;
@@ -107,8 +104,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          final locationPermissionStatus =
-              await Permission.locationWhenInUse.request();
+          final locationPermissionStatus = await Permission.locationWhenInUse.request();
           return GeolocationPermissionsResponse(
             allow: locationPermissionStatus == PermissionStatus.granted,
             retain: false,
@@ -128,8 +124,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
 
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey =
-        await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -184,8 +179,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
       client.updates.listen(onMessageReceived);
-      logD.i(
-          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
     }
   }
 
@@ -200,15 +194,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
       controller.runJavaScript("handleStateTopicEvent($pt);");
     }
-    logD.i(
-        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i(
-        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+  }
+
+  Future getBleInfo() async {
+    return await deviceService.getBleInfo();
   }
 
   Future getUserInfo() async {
@@ -232,8 +228,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// 1. 초기 등록 & 펫 프로필 수정 시
   Future trackPetId() async {
-    final petIdFromLocalStorage = await controller
-        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
     /// 2. petId 있는 경우
@@ -276,12 +271,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         await folder.create(recursive: true);
       }
 
-      final filePath =
-          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
-
       await _channel.invokeMethod("scanFile", {'filePath': filePath});
     } else if (Platform.isIOS) {
       await _channel.invokeMethod("saveFile", {
@@ -293,113 +286,109 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   Future jsChannelListener(message) async {
-    if (message.message == "setMobileStatusBarHeight") {
-      controller.runJavaScript(
-          "window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
-    }
-    if (message.message.startsWith('data:image/png')) {
-      return await saveFile(message.message, 'png');
-    }
-    if (message.message.startsWith('data:video/mp4')) {
-      return saveFile(message.message, 'mp4');
-    }
-    if (message.message == "deleteDevice") {
-      logD.i("Device info deleted. navigate to device register page.");
-      await userService.deleteUserInfo();
-      if (mounted) {
-        return Navigator.pushAndRemoveUntil(
+    switch (message.message) {
+      case "setMobileStatusBarHeight":
+        controller.runJavaScript("window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
+        break;
+
+      case "changeNetwork":
+        if (mounted) {
+          return Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) => const InitialDeviceHomePage()),
-            (route) => false);
-      }
-    }
-    if (message.message == "petId") {
-      await trackPetId();
-      await mqttConnect();
-    }
+            MaterialPageRoute(builder: (context) => const WifiConnectionPage(isFromWebView: true))
+          );
+        }
+        break;
 
-    if (message.message == "backButtonClicked") {
-      logD.i("Back button clicked in WebView");
-      backPageNavigator();
-      return;
-    }
+      case "deleteDevice":
+        logD.w("Device info deleted. Navigate to device register page.");
+        await userService.deleteUserInfo();
+        if (mounted) {
+          return Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => const InitialDeviceHomePage()
+              ), (route) => false
+          );
+        }
+        break;
 
-    if (message.message == "showBottomSheet") {
-      isShowBottomSheet = true;
-      return;
-    }
-    if (message.message == "showSubBottomSheet") {
-      isShowSubBottomSheet = true;
-      return;
-    }
-    if (message.message == "showModal") {
-      isShowModal = true;
-      return;
-    }
+      case "petId":
+        await trackPetId();
+        await mqttConnect();
+        break;
 
-    if (message.message == "closeBottomSheet") {
-      isShowBottomSheet = false;
-      return;
-    }
-    if (message.message == "closeSubBottomSheet") {
-      isShowSubBottomSheet = false;
-      return;
-    }
-    if (message.message == "closeModal") {
-      isShowModal = false;
-      return;
-    }
+      case "backButtonClicked":
+        logD.i("Back button clicked in WebView");
+        backPageNavigator();
+        break;
 
-    if (message.message == "openGallery") {
-      _getImage(ImageSource.gallery);
-      return;
-    }
+      case "showBottomSheet":
+        isShowBottomSheet = true;
+        break;
 
-    if (message.message == "openCamera") {
-      _getImage(ImageSource.camera);
-      return;
-    }
+      case "showSubBottomSheet":
+        isShowSubBottomSheet = true;
+        break;
 
-    if (message.message.startsWith("tel:")) {
-      _makePhoneCall(message.message);
-    }
+      case "showModal":
+        isShowModal = true;
+        break;
 
-    if (message.message.startsWith("aiCamGuideImage:")) {
-      String base64String = message.message.split(':')[1];
+      case "closeBottomSheet":
+        isShowBottomSheet = false;
+        break;
 
-      if (base64String.isNotEmpty) {
-        aiPresetImg = base64Decode(base64String);
-      } else {
-        aiPresetImg = null;
-      }
-    }
+      case "closeSubBottomSheet":
+        isShowSubBottomSheet = false;
+        break;
 
-    if (message.message.startsWith("openAICamAtFlutter:")) {
-      String type = message.message.split(':')[1];
+      case "closeModal":
+        isShowModal = false;
+        break;
 
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => AIHealthCameraPage(
-                  type: type,
-                  aiPresetImg: aiPresetImg,
-                  cameraShutFunction: (String base64) {
-                    _uploadPicture(base64);
-                  })),
-        );
-      }
+      case "openGallery":
+        _getImage(ImageSource.gallery);
+        break;
+
+      case "openCamera":
+        _getImage(ImageSource.camera);
+        break;
+
+      default:
+        if (message.message.startsWith('data:image/png')) {
+          return await saveFile(message.message, 'png');
+        } else if (message.message.startsWith('data:video/mp4')) {
+          return saveFile(message.message, 'mp4');
+        } else if (message.message.startsWith("tel:")) {
+          _makePhoneCall(message.message);
+        } else if (message.message.startsWith("aiCamGuideImage:")) {
+          String base64String = message.message.split(':')[1];
+          aiPresetImg = base64String.isNotEmpty ? base64Decode(base64String) : null;
+        } else if (message.message.startsWith("openAICamAtFlutter:")) {
+          String type = message.message.split(':')[1];
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (context) => AIHealthCameraPage(
+                      type: type,
+                      aiPresetImg: aiPresetImg,
+                      cameraShutFunction: (String base64) {
+                        _uploadPicture(base64);
+                      })
+              ),
+            );
+          }
+        }
+        break;
     }
   }
 
   void _uploadPicture(String base64String) {
-    Future.delayed(
-        const Duration(milliseconds: 150),
-        () => {
-              controller.runJavaScript(
-                  'window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
-            });
+    Future.delayed(const Duration(milliseconds: 150), () => {
+      controller.runJavaScript('window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
+    });
   }
 
   Future _getImage(ImageSource imageSource) async {
@@ -412,10 +401,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       if (originalImage != null) {
         img.Image resizedImage = img.copyResize(originalImage, width: 500);
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
-        // Base64로 변환합니다.
         String? base64String = base64Encode(compressedBytes);
-        controller.runJavaScript(
-            'window.changeFile("data:image/jpeg;base64,$base64String")');
+        controller.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -472,8 +459,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           }
         }
       } else {
-        controller.runJavaScript(
-            "if (window.location.pathname !== '/') { window.history.back(); }");
+        controller.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
       }
       return false;
     }
@@ -492,13 +478,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    getBleInfo();
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       isWebViewActive = true;
       logD.i("WebView 상태 $state $isWebViewActive");
-    }
-    if (state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.paused) {
+    } else {
       isWebViewActive = false;
       logD.i("WebView 상태 $state $isWebViewActive");
     }
