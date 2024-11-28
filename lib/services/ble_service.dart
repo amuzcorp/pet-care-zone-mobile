@@ -16,6 +16,12 @@ class BleService {
 
   Uint8List? macAddressArray;
   String? macAddressWithSeparatorString = "";
+
+  Future initializeConnectedDevice() async {
+    BluetoothDevice device = FlutterBluePlus.connectedDevices.first;
+    connectedDevice = device;
+  }
+
   Future getCharacteristics() async {
     if (connectedDevice != null) {
       await Future.delayed(const Duration(seconds: 1));

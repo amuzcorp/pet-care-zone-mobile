@@ -88,23 +88,23 @@ class FirebaseService {
   static void onNotificationTap(NotificationResponse notificationResponse) {
     logD.w('>>> Notification tapped - onNotificationTap called');
     logD.w('notificationResponse: ${notificationResponse?.payload}');
-    final response = notificationResponse?.payload?[1];
-    logD.w('response $response');
+    final response = jsonDecode(notificationResponse.payload.toString());
+    final String deepLink = response['deep_link'];
+    logD.w('deepLink $deepLink');
 
-    AppLifecycleStateChecker().navigatorKey.currentState?.pushNamed('/main',
+    AppLifecycleStateChecker().navigatorKey.currentState?.pushNamed(
+      '/$deepLink',
       arguments: notificationResponse,
     );
   }
 
   //포그라운드에서 푸시 알림을 전송받기 위한 패키지 푸시 알림 발송
-  static Future showSimpleNotification({
+  Future showSimpleNotification({
     String? title,
     String? body,
     String? imageUrl,
-    String? deepLink,
     required String payload
   }) async {
-
     Future<String> getBase64FromImage(String imageUrl) async {
       final response = await http.get(Uri.parse(imageUrl));
       if (response.statusCode == 200) {

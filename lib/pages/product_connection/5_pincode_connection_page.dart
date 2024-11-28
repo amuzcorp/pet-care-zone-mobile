@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
+import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
+import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
@@ -26,6 +29,9 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final MessageService messageService = MessageService();
   final BleService bleService = BleService();
+  final ApiService apiService = ApiService();
+  final DeviceService deviceService = DeviceService();
+  final LunaService lunaService = LunaService();
   String? lastLog = "";
   int countdown = 0;
   bool isCountdownRunning = false;
@@ -45,7 +51,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
     super.dispose();
   }
 
-  void handleLogEvent(String event) {
+  void handleLogEvent(String event) async {
     if (mounted) {
       if (event.contains('error')) {
         errorList = [];
@@ -54,13 +60,16 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
 
       if (event.contains("rejected") || event.contains('invalid')) {
         messageHandler("*PIN Code가 일치하지 않습니다.");
+        final deviceInfo = await deviceService.getWebOSDeviceInfo();
+        await lunaService.allowPincodeRequest();
+        await connectSdkService.requestParingKey(deviceInfo);
       }
 
       if (event.contains("many")) {
         startCountdown();
       }
 
-      if (event.contains('true') || event.contains('registered')) {
+      if (event.contains('registered')) {
         messageHandler("");
       }
 

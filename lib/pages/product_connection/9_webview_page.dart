@@ -17,6 +17,7 @@ import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/user_service.dart';
+import 'package:petcarezone/services/wifi_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -26,9 +27,10 @@ import '../../utils/logger.dart';
 import '../../widgets/indicator/indicator.dart';
 
 class WebViewPage extends StatefulWidget {
-  const WebViewPage({super.key, required this.uri, this.backPage});
+  const WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage});
 
   final Uri uri;
+  final Uri? fcmUri;
   final Widget? backPage;
 
   @override
@@ -36,8 +38,7 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
-  static const MethodChannel _channel =
-      MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
   final WebViewController controller = WebViewController();
@@ -45,14 +46,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   final lunaService = LunaService();
   final apiService = ApiService();
   final deviceService = DeviceService();
+  final wifiService = WifiService();
   int petId = 0;
   String deviceId = "";
   String userId = "";
   String stateTopic = "";
   String eventTopic = "";
   bool isWebViewWidgetInitialized = false;
+  bool isConnected = false;
   bool isDisposed = false;
   bool isWebViewActive = true;
+  bool isRegisterPage = false;
   bool isShowBottomSheet = false;
   bool isShowSubBottomSheet = false;
   bool isShowModal = false;
@@ -93,20 +97,19 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           },
         ),
       )
+      ..loadRequest(Uri.parse(ApiUrls.webViewUrl))
       ..addJavaScriptChannel(
         'Flutter',
         onMessageReceived: (JavaScriptMessage message) async {
           await jsChannelListener(message);
         },
-      )
-      ..loadRequest(Uri.parse(ApiUrls.webViewUrl));
+      );
 
     final platformController = controller.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          final locationPermissionStatus =
-              await Permission.locationWhenInUse.request();
+          final locationPermissionStatus = await Permission.locationWhenInUse.request();
           return GeolocationPermissionsResponse(
             allow: locationPermissionStatus == PermissionStatus.granted,
             retain: false,
@@ -126,8 +129,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
 
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey =
-        await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -150,6 +152,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   Future mqttConnect() async {
+    if (isConnected) return;
     try {
       if (client.connectionStatus?.state == MqttConnectionState.disconnected) {
         await client.connect();
@@ -162,12 +165,15 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// MQTT Callback method
   void onConnected() {
+    if (isConnected) return;
+    isConnected = true;
     logD.i('Callback method result : MQTT 연결 성공');
     subscribe();
   }
 
   /// MQTT Callback method
   void onDisconnected() async {
+    isConnected = false;
     logD.w('MQTT 연결 끊김');
     if (isWebViewActive && !isDisposed) {
       logD.i('MQTT 재연결 시도 중...');
@@ -182,8 +188,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
       client.updates.listen(onMessageReceived);
-      logD.i(
-          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
     }
   }
 
@@ -198,15 +203,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
       controller.runJavaScript("handleStateTopicEvent($pt);");
     }
-    logD.i(
-        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i(
-        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   Future getBleInfo() async {
@@ -229,13 +232,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     localStorage.setItem('userId', '$userId');
     localStorage.setItem('petId', '${petId == 0 ? "" : petId}');
     localStorage.setItem('deviceId', '${deviceId!.isEmpty ? "" : deviceId}');
+    localStorage.setItem('ssid', '${await wifiService.getCurrentSSID()}');
     """);
   }
 
   /// 1. 초기 등록 & 펫 프로필 수정 시
   Future trackPetId() async {
-    final petIdFromLocalStorage = await controller
-        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await controller.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
     /// 2. petId 있는 경우
@@ -278,8 +281,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         await folder.create(recursive: true);
       }
 
-      final filePath =
-          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -295,19 +297,32 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   Future jsChannelListener(message) async {
     switch (message.message) {
+      case "home":
+        if (widget.fcmUri != null) {
+          final fcmUri = widget.fcmUri.toString();
+          print('fcmUri $fcmUri');
+          await controller.runJavaScript("navigateToPetCareSection('$fcmUri');");
+        }
+        break;
+      case "register":
+        logD.i('now register page');
+        isRegisterPage = true;
+        break;
       case "setMobileStatusBarHeight":
-        controller.runJavaScript(
-            "window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
+        await controller.runJavaScript("window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
         break;
 
       case "changeNetwork":
-        if (mounted) {
-          return Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      const WifiConnectionPage(isFromWebView: true)));
+        logD.i('changeNetwork');
+        if (mounted && context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WifiConnectionPage(isFromWebView: true),
+            ),
+          );
         }
+
         break;
 
       case "deleteDevice":
@@ -373,8 +388,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           _makePhoneCall(message.message);
         } else if (message.message.startsWith("aiCamGuideImage:")) {
           String base64String = message.message.split(':')[1];
-          aiPresetImg =
-              base64String.isNotEmpty ? base64Decode(base64String) : null;
+          aiPresetImg = base64String.isNotEmpty ? base64Decode(base64String) : null;
         } else if (message.message.startsWith("openAICamAtFlutter:")) {
           String type = message.message.split(':')[1];
           if (mounted) {
@@ -414,8 +428,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         img.Image resizedImage = img.copyResize(originalImage, width: 500);
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         String? base64String = base64Encode(compressedBytes);
-        controller.runJavaScript(
-            'window.changeFile("data:image/jpeg;base64,$base64String")');
+        controller.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -472,12 +485,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           }
         }
       } else {
-        if (splittedUrl.contains("ai-health") &&
-            splittedUrl.contains("result")) {
+        if (splittedUrl.contains("ai-health") && splittedUrl.contains("result")) {
           controller.runJavaScript("window.moveBackByStep(-3)");
         } else {
-          controller.runJavaScript(
-              "if (window.location.pathname !== '/') { window.history.back(); }");
+          controller.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
         }
       }
       return false;
@@ -503,13 +514,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
       isWebViewActive = true;
       logD.i("WebView 상태 $state $isWebViewActive");
     } else {
       isWebViewActive = false;
       logD.i("WebView 상태 $state $isWebViewActive");
+      if (isRegisterPage && state == AppLifecycleState.detached) {
+        await lunaService.resetDevice();
+      }
     }
   }
 

@@ -30,13 +30,8 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
   final double itemHeight = 87.0;
 
   Future<void> bleConnectToDevice(BluetoothDevice device) async {
-    if (device.isDisconnected) {
-      try {
-        await device.connect();
-      } catch (e) {
-        await device.connect();
-      }
-    }
+    await device.disconnect();
+    await device.connect();
   }
 
   Future<void> saveDevicesAndNavigate(Map<String, dynamic> device) async {
@@ -50,7 +45,7 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
 
       /// BLE Data
       await deviceService.saveBleInfo(bluetoothDevice);
-
+      await deviceService.getConnectedBleDevice();
       if (mounted) {
         Navigator.pushReplacement(
           context,
