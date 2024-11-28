@@ -8,18 +8,16 @@ class ApiUrls {
   static const String regMobileToken = '$baseUrl/member/mobile';
 
   static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
-  static const String aiHealthUrl = '$webViewUrl/ai-health';
-  static const String tempHistoryDay = '$webViewUrl/history/temperature';
-  // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview-rosy.vercel.app/';
+  static const String home = '/home';
+  static const String aiHealthUrl = '/ai-health';
+  static const String tempHistoryDay = '/history/temperature';
+  // static const String webViewUrl = 'http://192.168.200.75:5173';
 
-
-  static const String lunaWifiStatusUrl = 'ssap://com.webos.service.wifi/getstatus';
-  static const String getWifiProfileList = 'ssap://com.webos.service.wifi/getprofilelist';
-  static const Map lunaWifiScan = {
-    'uri': 'ssap://com.webos.service.wifi/findnetworks',
-    'payload': {"subscribe": true}
+  static const String allowPincodeRequest = 'luna-send -n 1 -f luna://com.webos.service.secondscreen.gateway/unpairAll';
+  static const Map resetDevice = {
+    'uri': 'luna://com.webos.service.petcareservice/petcontrol',
+    'payload': {"command": "initialSettingReset"}
   };
-
   static const String lunaProvisionUrl = 'ssap://com.webos.service.petcareservice/mqtt/executeProvisioning';
   static Map registerUserProfile = {
     'uri': 'ssap://com.webos.service.petcareservice/mqtt/setPetInfo',

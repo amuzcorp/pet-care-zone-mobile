@@ -123,20 +123,22 @@ class BasicPage extends StatelessWidget {
               )
             : null,
         backgroundColor: backgroundColor ?? ColorConstants.pageBG,
-        body: backgroundImage != null
-            ? Stack(
-                children: [
-                  Positioned.fill(child: backgroundImage!),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    child: pageContent,
-                  ),
-                ],
-              )
-            : Container(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+        body: SafeArea(
+          child: backgroundImage != null
+              ? Stack(
+            children: [
+              Positioned.fill(child: backgroundImage!),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
                 child: pageContent,
               ),
+            ],
+          )
+              : Container(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+            child: pageContent,
+          ),
+        )
       ),
     );
   }

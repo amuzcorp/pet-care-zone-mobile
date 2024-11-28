@@ -4,6 +4,7 @@ import 'package:petcarezone/constants/icon_constants.dart';
 import 'package:petcarezone/data/models/device_model.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/device_service.dart';
+import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/cards/device_register_card.dart';
@@ -23,6 +24,7 @@ class RegisterCompletePage extends StatefulWidget {
 class _RegisterCompletePageState extends State<RegisterCompletePage> {
   final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
+  final LunaService lunaService = LunaService();
   String deviceId = '';
   String deviceName = '제품 닉네임';
   String modelNumber = '';
@@ -45,7 +47,6 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
       );
       await deviceService.provisionDevice(deviceId!);
       await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
-
     } else {
       guideMessage = '제품 정보를 먼저 등록해 주세요.';
     }
@@ -58,6 +59,13 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
+    if (state == AppLifecycleState.detached) {
+      await lunaService.resetDevice();
+    }
+  }
+
+  @override
   void initState() {
     super.initState();
     getWebOSDeviceInfo();
@@ -66,8 +74,9 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   @override
   Widget build(BuildContext context) {
     return BasicPage(
-      showAppBar: true,
+      showAppBar: false,
       description: "Pet Care Zone 추가를\n완료했어요.",
+      leadingHeight: 40.0,
       contentWidget: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -100,8 +109,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
             text: "반려동물 프로필 등록",
             onPressed: () async {
               await registerDeviceInfo();
-              if (mounted)
-                {
+              if (mounted) {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -111,7 +119,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
                       ),
                     ),
                   );
-                }
+              }
             },
           ),
         ],

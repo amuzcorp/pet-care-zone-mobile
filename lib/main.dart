@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
 import 'package:petcarezone/services/firebase_service.dart';
@@ -50,10 +51,9 @@ class MyAppState extends State<MyApp> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         final route = routesWeb.firstWhere((route) => route.path == settings.name);
-
         if (route.url.isNotEmpty) {
           return MaterialPageRoute(
-            builder: (context) => WebViewPage(uri: Uri.parse(route.url)),
+            builder: (context) => WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl), fcmUri: Uri.parse(route.url)),
           );
         }
         return null;

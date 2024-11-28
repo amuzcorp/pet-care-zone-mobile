@@ -97,15 +97,12 @@ class ConnectSdkService {
     }
   }
 
-
   Future<void> startScan() async {
     scanTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
       try {
         logD.i("Scanning...");
-        findMatchedDevice();
-
-        await channel.invokeMethod('startScan');
-
+        channel.invokeMethod('startScan');
+        await findMatchedDevice();
       } on PlatformException catch (e) {
         logD.w("Failed to start scan: '${e.message}'.");
         await stopScan();

@@ -16,15 +16,6 @@ class LunaService {
     }
   }
 
-  Future checkWifiStatus() async {
-    const String uri = ApiUrls.lunaWifiStatusUrl;
-    try {
-      webOSRequest(uri, {});
-    } catch (e) {
-      throw Exception('Failed Response $e');
-    }
-  }
-
   Future startProvision() async {
     const String uri = ApiUrls.lunaProvisionUrl;
     try {
@@ -34,8 +25,8 @@ class LunaService {
     }
   }
 
-  Future getWifiProfileList() async {
-    const String uri = ApiUrls.getWifiProfileList;
+  Future allowPincodeRequest() async {
+    const String uri = ApiUrls.allowPincodeRequest;
     try {
       webOSRequest(uri, {});
     } catch (e) {
@@ -43,11 +34,22 @@ class LunaService {
     }
   }
 
-  Future<void> registerUserProfile(String userId, int petId) async {
-    Map<String, dynamic> userData = Map<String, dynamic>.from(ApiUrls.registerUserProfile);
-
+  Future resetDevice() async {
+    Map<String, dynamic> userData = Map<String, dynamic>.from(ApiUrls.resetDevice);
     final String? uri = userData['uri'];
+    final String payloadString = jsonEncode(userData['payload']);
 
+    try {
+      final Map<String, dynamic>? payload = jsonDecode(payloadString!);
+      webOSRequest(uri, payload);
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
+  Future registerUserProfile(String userId, int petId) async {
+    Map<String, dynamic> userData = Map<String, dynamic>.from(ApiUrls.registerUserProfile);
+    final String? uri = userData['uri'];
     userData['payload']['userId'] = userId;
     userData['payload']['petId'] = petId;
 

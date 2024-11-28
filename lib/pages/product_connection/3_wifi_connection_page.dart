@@ -6,10 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
+import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
@@ -21,8 +23,9 @@ import '../../widgets/indicator/indicator.dart';
 import '../../widgets/page/basic_page.dart';
 
 class WifiConnectionPage extends StatefulWidget {
-  const WifiConnectionPage({super.key, required this.isFromWebView});
+  const WifiConnectionPage({super.key, required this.isFromWebView, this.webViewController});
   final bool isFromWebView;
+  final WebViewController? webViewController;
 
   @override
   State<WifiConnectionPage> createState() => _WifiConnectionPageState();
@@ -49,8 +52,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   bool isLoading = false;
   bool _isDropdownOpen = false;
   bool isFromWebView = false;
-
-  BluetoothCharacteristic? targetCharacteristic;
 
   OverlayEntry? _overlayEntry;
 
@@ -247,6 +248,26 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     }
   }
 
+  Future<void> initializeBleFromWebView() async {
+    try {
+      await connectToBleFromWebView();
+      await bleService.initializeConnectedDevice();
+      logD.i('BLE connectedDevice: ${bleService.connectedDevice}');
+    } catch (e) {
+      logD.e('Error during BLE initialization: $e');
+      messageController.add('* BLE 초기화 중 오류가 발생했습니다.');
+    }
+  }
+
+  Future<void> initializeBleService() async {
+    try {
+      await bleService.initializeConnectedDevice();
+      logD.i('BLE connectedDevice: ${bleService.connectedDevice}');
+    } catch (e) {
+      logD.e('Error during BLE initialization: $e');
+    }
+  }
+
   Future<void> navigateToPincodeCheckPage() async {
     _closeDropdown();
     if(mounted) {
@@ -257,7 +278,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   Future<void> connectToWifiAndDevice() async {
     if (!await checkWifiConnection()) return;
     if (!checkPassword()) return;
-    if (bleService.connectedDevice == null) {
+    if (bleService?.connectedDevice == null) {
       messageController.add('* BLE 연결을 확인해주세요.');
       return;
     }
@@ -268,13 +289,16 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
       await Future.delayed(const Duration(seconds: 3));
-      if (isFromWebView && mounted) {
-        return Navigator.of(context).pop();
+      if (isFromWebView) {
+        widget.webViewController!.runJavaScript("localStorage.setItem('ssid', '$selectedWifi');");
+        await completer.future;
+        if(mounted) {
+          return Navigator.of(context).pop();
+        }
       }
       connectSdkService.startScan();
       connectSdkService.setupListener();
       connectSdkService.matchedDeviceStream.listen((devices) async {
-        print('devicesdevicesdevices $devices');
         if (devices.isNotEmpty) {
             await connectSdkService.matchedDeviceController.close();
             await deviceService.saveAndInitializeWebOSDevice();
@@ -306,6 +330,20 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     return true;
   }
 
+  Future connectToBleFromWebView() async {
+    final connectedDevice = await deviceService.getConnectedBleDevice();
+    if (connectedDevice != null) {
+      try {
+        await connectedDevice.connect();
+        logD.i('connected to device ble.');
+      } catch (e) {
+        logD.e('Failed to reconnect: $e');
+      }
+    } else {
+      logD.e('No previously connected device found.');
+    }
+  }
+
   void errorListener(error) {
     String bleErrorText = e.toString().toLowerCase();
     if (bleErrorText.contains('disconnect')) {
@@ -327,9 +365,14 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   }
 
   @override
-  void didChangeDependencies() {
+  void didChangeDependencies() async {
     super.didChangeDependencies();
-    bleService.getCharacteristics();
+    if (isFromWebView) {
+      await initializeBleFromWebView();
+    } else {
+      await initializeBleService();
+    }
+    await bleService.getCharacteristics();
   }
 
   @override
@@ -339,7 +382,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     wifiService.initialize();
     messageController = messageService.messageController;
     passwordController.clear();
-    logD.i('BLE connectedDevice ${bleService.connectedDevice}');
   }
 
   @override

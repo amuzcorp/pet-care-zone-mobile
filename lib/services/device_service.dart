@@ -118,6 +118,12 @@ class DeviceService {
     return {};
   }
 
+  Future<BluetoothDevice?> getConnectedBleDevice() async {
+    final bleInfo = await getBleInfo();
+    final String remoteId = bleInfo['scanResult']['device']['remoteId'];
+    return BluetoothDevice.fromId(remoteId);
+  }
+
   Future<void> saveLocalDeviceInfo(Map<String, dynamic> deviceInfo) async {
     final prefs = await SharedPreferences.getInstance();
     dynamic userData = prefs.getString('user');
