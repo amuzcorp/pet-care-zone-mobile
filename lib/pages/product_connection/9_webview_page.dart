@@ -27,11 +27,12 @@ import '../../utils/logger.dart';
 import '../../widgets/indicator/indicator.dart';
 
 class WebViewPage extends StatefulWidget {
-  WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage});
+  WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage, this.historyPeriod});
 
   final Uri uri;
-  Uri? fcmUri;
   final Widget? backPage;
+  Uri? fcmUri;
+  String? historyPeriod;
 
   @override
   State<WebViewPage> createState() => _WebViewPageState();
@@ -301,7 +302,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         if (widget.fcmUri != null) {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
-          await controller.runJavaScript("navigateToPetCareSection('$fcmUri');");
+          await controller.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
           widget.fcmUri = null;
         }
         break;

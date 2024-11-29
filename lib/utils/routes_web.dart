@@ -7,6 +7,7 @@ class RoutesWeb {
   RoutesWeb(this.path, this.url);
 }
 
+final historyPeriod = ['day', 'week', 'month'];
 final List<RoutesWeb> routesWeb = [
   RoutesWeb('/main', ApiUrls.webViewUrl),
   RoutesWeb('/ai_health', ApiUrls.aiHealthUrl),

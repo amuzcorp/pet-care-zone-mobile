@@ -51,12 +51,14 @@ class MyAppState extends State<MyApp> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         final route = routesWeb.firstWhere((route) => route.path == settings.name);
-        if (route.url.isNotEmpty) {
-          return MaterialPageRoute(
-            builder: (context) => WebViewPage(uri: Uri.parse(ApiUrls.webViewUrl), fcmUri: Uri.parse(route.url)),
-          );
-        }
-        return null;
+        final history = historyPeriod.firstWhere((history) => settings.name!.contains(history));
+        return MaterialPageRoute(
+          builder: (context) => WebViewPage(
+            uri: Uri.parse(ApiUrls.webViewUrl),
+            fcmUri: Uri.parse(route.url),
+            historyPeriod: history.isNotEmpty ? history : '',
+          ),
+        );
       },
       home: FutureBuilder<Widget>(
         future: _initialPage,
