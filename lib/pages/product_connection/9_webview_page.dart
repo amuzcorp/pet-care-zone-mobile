@@ -27,10 +27,10 @@ import '../../utils/logger.dart';
 import '../../widgets/indicator/indicator.dart';
 
 class WebViewPage extends StatefulWidget {
-  const WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage});
+  WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage});
 
   final Uri uri;
-  final Uri? fcmUri;
+  Uri? fcmUri;
   final Widget? backPage;
 
   @override
@@ -206,14 +206,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
+  Future getBleInfo() async {
+    return await deviceService.getBleInfo();
+  }
+
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
     logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
-  }
-
-  Future getBleInfo() async {
-    return await deviceService.getBleInfo();
   }
 
   Future getUserInfo() async {
@@ -302,6 +302,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
           await controller.runJavaScript("navigateToPetCareSection('$fcmUri');");
+          widget.fcmUri = null;
         }
         break;
       case "register":
