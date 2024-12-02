@@ -83,7 +83,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
             textAlign: TextAlign.left,
           ),
           titleSpacing: 4,
-          backgroundColor: Colors.black.withOpacity(0.5),
+          backgroundColor: Colors.black,
           elevation: 0.0,
           leading: IconButton(
             icon: SvgPicture.asset(IconConstants.arrowBack,
@@ -94,19 +94,131 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
-        extendBodyBehindAppBar: true,
+        extendBodyBehindAppBar: false,
+        bottomNavigationBar: Container(
+          width: MediaQuery.of(context).size.width,
+          height: 188,
+          color: Colors.black,
+          child: Column(
+            children: [
+              Container(
+                  width: MediaQuery.of(context).size.width,
+                  margin: const EdgeInsets.fromLTRB(10, 20, 10, 20),
+                  child: Stack(
+                    alignment: Alignment.centerRight,
+                    children: [
+                      Center(
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 80, minHeight: 80), // constraints
+                          icon: SvgPicture.asset(
+                            IconConstants.cameraShutter,
+                          ),
+                          onPressed: () async {
+                            String? base64 = await _takePicture();
+                            if (base64 != null && mounted) {
+                              Navigator.of(context).pop();
+                              widget.cameraShutFunction(base64);
+                            }
+                          },
+                        ),
+                      ),
+                      IconButton(
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                            minWidth: 32, minHeight: 32), // constraints
+                        icon: SvgPicture.asset(
+                          IconConstants.circleInfo,
+                        ),
+                        onPressed: () {},
+                      ),
+                    ],
+                  )),
+              if (widget.aiPresetImg != null)
+                Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  width: 200,
+                  height: 32,
+                  decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(50)),
+                  child: Stack(
+                    children: [
+                      Container(
+                        height: 32,
+                        decoration: BoxDecoration(
+                            border: Border.all(
+                                width: 1, color: const Color(0xff606C80)),
+                            borderRadius: BorderRadius.circular(50)),
+                      ),
+                      AnimatedContainer(
+                        width: 200,
+                        height: 32,
+                        alignment: currentMode == mode[0]
+                            ? Alignment.centerLeft
+                            : Alignment.centerRight,
+                        decoration: BoxDecoration(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(50)),
+                        duration: const Duration(milliseconds: 200),
+                        child: Container(
+                          width: 100,
+                          height: 32,
+                          decoration: BoxDecoration(
+                              color: const Color(0xff0A6CFF),
+                              borderRadius: BorderRadius.circular(50)),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 32,
+                        child: Row(
+                          children: mode.map<Widget>((e) {
+                            return Flexible(
+                              fit: FlexFit.tight, // 모든 항목이 동일한 비율로 공간을 차지하도록 설정
+                              child: TextButton(
+                                style: ButtonStyle(
+                                    overlayColor: MaterialStateProperty.all(
+                                        Colors.transparent)),
+                                onPressed: () => {
+                                  setState(() {
+                                    currentMode = e;
+                                  }),
+                                },
+                                child: Text(
+                                  e,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.normal,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center, // 텍스트를 중앙 정렬
+                                ),
+                              ),
+                            );
+                          }).toList(), // map을 리스트로 변환
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
         body: Stack(
-          alignment: Alignment.center,
+          alignment: Alignment.topCenter,
           children: [
             SizedBox(
-                height: MediaQuery.of(context).size.height,
+                height: MediaQuery.of(context).size.height -
+                    188 -
+                    (MediaQuery.of(context).padding.top + kToolbarHeight),
                 width: MediaQuery.of(context).size.width,
                 child: _cameraPreviewWidget()),
             if (widget.aiPresetImg != null && currentMode == mode[0])
               Column(
                 children: [
-                  SizedBox(
-                    height: MediaQuery.of(context).padding.top + 80,
+                  const SizedBox(
+                    height: 20,
                   ),
                   const Text(
                     "가이드에 맞춰 뒷모습을 촬영해주세요.",
@@ -118,132 +230,17 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(
-                    height: 9,
+                    height: 8,
                   ),
-                  Image.memory(
-                    widget.aiPresetImg!,
-                    fit: BoxFit.fill,
-                    width: MediaQuery.of(context).size.width - 48,
-                    height: 432,
+                  Expanded(
+                    child: Image.memory(
+                      widget.aiPresetImg!,
+                      fit: BoxFit.fill,
+                      width: MediaQuery.of(context).size.width - 48,
+                    ),
                   )
                 ],
               ),
-            Positioned(
-              bottom: 0,
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                height: 188,
-                color: Colors.black.withOpacity(0.5),
-                child: Column(
-                  children: [
-                    Container(
-                        width: MediaQuery.of(context).size.width,
-                        margin: const EdgeInsets.fromLTRB(10, 20, 10, 20),
-                        child: Stack(
-                          alignment: Alignment.centerRight,
-                          children: [
-                            Center(
-                              child: IconButton(
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(
-                                    minWidth: 80, minHeight: 80), // constraints
-                                icon: SvgPicture.asset(
-                                  IconConstants.cameraShutter,
-                                ),
-                                onPressed: () async {
-                                  String? base64 = await _takePicture();
-                                  if (base64 != null && mounted) {
-                                    Navigator.of(context).pop();
-                                    widget.cameraShutFunction(base64);
-                                  }
-                                },
-                              ),
-                            ),
-                            IconButton(
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                  minWidth: 32, minHeight: 32), // constraints
-                              icon: SvgPicture.asset(
-                                IconConstants.circleInfo,
-                              ),
-                              onPressed: () {},
-                            ),
-                          ],
-                        )),
-                    if (widget.aiPresetImg != null)
-                      Container(
-                        margin: const EdgeInsets.only(top: 20),
-                        width: 200,
-                        height: 32,
-                        decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(50)),
-                        child: Stack(
-                          children: [
-                            Container(
-                              height: 32,
-                              decoration: BoxDecoration(
-                                  border: Border.all(
-                                      width: 1, color: const Color(0xff606C80)),
-                                  borderRadius: BorderRadius.circular(50)),
-                            ),
-                            AnimatedContainer(
-                              width: 200,
-                              height: 32,
-                              alignment: currentMode == mode[0]
-                                  ? Alignment.centerLeft
-                                  : Alignment.centerRight,
-                              decoration: BoxDecoration(
-                                  color: Colors.transparent,
-                                  borderRadius: BorderRadius.circular(50)),
-                              duration: const Duration(milliseconds: 200),
-                              child: Container(
-                                width: 100,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                    color: const Color(0xff0A6CFF),
-                                    borderRadius: BorderRadius.circular(50)),
-                              ),
-                            ),
-                            SizedBox(
-                              height: 32,
-                              child: Row(
-                                children: mode.map<Widget>((e) {
-                                  return Flexible(
-                                    fit: FlexFit
-                                        .tight, // 모든 항목이 동일한 비율로 공간을 차지하도록 설정
-                                    child: TextButton(
-                                      style: ButtonStyle(
-                                          overlayColor:
-                                              MaterialStateProperty.all(
-                                                  Colors.transparent)),
-                                      onPressed: () => {
-                                        setState(() {
-                                          currentMode = e;
-                                        }),
-                                      },
-                                      child: Text(
-                                        e,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.normal,
-                                          color: Colors.white,
-                                        ),
-                                        textAlign:
-                                            TextAlign.center, // 텍스트를 중앙 정렬
-                                      ),
-                                    ),
-                                  );
-                                }).toList(), // map을 리스트로 변환
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            )
           ],
         ));
   }
