@@ -7,12 +7,29 @@ class ApiUrls {
   static const String getPetProfile = '$baseUrl/pet/profile';
   static const String regMobileToken = '$baseUrl/member/mobile';
 
-  static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
+  /// WebView Urls
+  // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
   static const String home = '/home';
   static const String aiHealthUrl = '/ai-health';
-  static const String tempHistoryDay = '/history/temperature';
-  // static const String webViewUrl = 'http://192.168.200.75:5173';
 
+  /// history Urls
+  static const String tempHistory = '/history/temperature';
+  static const String weightHistory = '/history/weight';
+  static const String heartHistory = '/history/heart-rate';
+  static const String respHistory = '/history/respiratory-rate';
+  static const String stayedTimeHistory = '/history/stayed-time';
+
+  static const Map<String, String> historyUrls = {
+    'temperature': '/history/temperature',
+    'weight': '/history/weight',
+    'heart': '/history/heart-rate',
+    'respiratory': '/history/respiratory-rate',
+    'stayedTime': '/history/stayed-time',
+  };
+
+  static const String webViewUrl = 'http://192.168.200.75:5173';
+
+  /// WebOS Urls
   static const String allowPincodeRequest = 'luna-send -n 1 -f luna://com.webos.service.secondscreen.gateway/unpairAll';
   static const Map resetDevice = {
     'uri': 'luna://com.webos.service.petcareservice/petcontrol',
