@@ -1,9 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/icon_constants.dart';
@@ -208,12 +210,7 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
         body: Stack(
           alignment: Alignment.topCenter,
           children: [
-            SizedBox(
-                height: MediaQuery.of(context).size.height -
-                    188 -
-                    (MediaQuery.of(context).padding.top + kToolbarHeight),
-                width: MediaQuery.of(context).size.width,
-                child: _cameraPreviewWidget()),
+            _cameraPreviewWidget(),
             if (widget.aiPresetImg != null && currentMode == mode[0])
               Column(
                 children: [
@@ -249,15 +246,18 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
     if (controller == null || !controller!.value.isInitialized) {
       return Container();
     }
-    return Listener(
-      child: CameraPreview(
-        controller!,
-        child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-          return GestureDetector(
-            behavior: HitTestBehavior.opaque,
-          );
-        }),
+    return AspectRatio(
+      aspectRatio: MediaQuery.of(context).size.width /
+          (MediaQuery.of(context).size.height -
+              188 -
+              (MediaQuery.of(context).padding.top + kToolbarHeight)),
+      child: ClipRect(
+        child: Transform.scale(
+          scale: controller!.value.aspectRatio,
+          child: Center(
+            child: CameraPreview(controller!),
+          ),
+        ),
       ),
     );
   }
@@ -275,8 +275,18 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
 
     try {
       final XFile xFile = await cameraController.takePicture();
-      File file = File(xFile.path);
-      List<int> bytes = await file.readAsBytes();
+      ImageProperties properties =
+          await FlutterNativeImage.getImageProperties(xFile.path);
+
+      var cropSize = min(properties.width!, properties.height!);
+
+      int offsetX = (properties.width! - cropSize) ~/ 2;
+      int offsetY = (properties.height! - cropSize) ~/ 2;
+
+      File imageFile = await FlutterNativeImage.cropImage(
+          xFile.path, offsetX, offsetY, cropSize, cropSize);
+
+      List<int> bytes = await imageFile.readAsBytes();
       String base64String = base64Encode(bytes);
       return base64String;
     } on CameraException catch (e) {
