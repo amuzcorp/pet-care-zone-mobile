@@ -110,7 +110,8 @@ class DeviceService {
     final prefs = await SharedPreferences.getInstance();
     String? deviceJson = prefs.getString('ble_info');
     if (deviceJson != null && deviceJson.isNotEmpty) {
-      Map<String, dynamic> deviceMap = jsonDecode(deviceJson);
+      Map<String, dynamic> deviceMap = await jsonDecode(deviceJson);
+      print('deviceMap $deviceMap');
       return deviceMap;
     } else {
       logD.e('No ble info found in SharedPreferences');
@@ -118,7 +119,7 @@ class DeviceService {
     return {};
   }
 
-  Future<BluetoothDevice?> getConnectedBleDevice() async {
+  Future<BluetoothDevice> getConnectedBleDevice() async {
     final bleInfo = await getBleInfo();
     final String remoteId = bleInfo['scanResult']['device']['remoteId'];
     return BluetoothDevice.fromId(remoteId);

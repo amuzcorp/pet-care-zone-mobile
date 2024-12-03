@@ -5,6 +5,7 @@ import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
 import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/services/user_service.dart';
+import 'package:petcarezone/utils/logger.dart';
 import 'package:petcarezone/utils/routes_web.dart';
 import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 
@@ -50,16 +51,31 @@ class MyAppState extends State<MyApp> {
         fontFamily: 'LG_Smart_UI',
       ),
       onGenerateRoute: (RouteSettings settings) {
-        final route = routesWeb.firstWhere((route) => route.path == settings.name);
-        final history = historyPeriod.firstWhere((history) => settings.name!.contains(history));
+        logD.i("Navigating to: ${settings.name}");
+
+        final route = routesWeb.firstWhere((route) => route.path == settings.name,
+          orElse: () {
+            logD.e("Route not found for: ${settings.name}");
+            return RoutesWeb('/main', ApiUrls.webViewUrl);
+          },
+        );
+
+        final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
+          orElse: () {
+            logD.e("History period not found for: ${settings.name}");
+            return '';
+          },
+        );
+
         return MaterialPageRoute(
           builder: (context) => WebViewPage(
             uri: Uri.parse(ApiUrls.webViewUrl),
             fcmUri: Uri.parse(route.url),
-            historyPeriod: history.isNotEmpty ? history : '',
+            historyPeriod: history,
           ),
         );
       },
+
       home: FutureBuilder<Widget>(
         future: _initialPage,
         builder: (context, snapshot) {
