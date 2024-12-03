@@ -347,6 +347,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
+    initializeBleService();
   }
 
   @override
@@ -356,7 +357,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     wifiService.initialize();
     messageController = messageService.messageController;
     passwordController.clear();
-    initializeBleService();
   }
 
   @override
