@@ -38,7 +38,7 @@ class WebViewPage extends StatefulWidget {
   State<WebViewPage> createState() => _WebViewPageState();
 }
 
-class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
+class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver,RouteAware {
   static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
@@ -302,8 +302,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         if (widget.fcmUri != null) {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
-          await controller.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
+          if (widget.historyPeriod!.isNotEmpty) {
+            await controller.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
+          } else {
+            await controller.runJavaScript("navigateToPetCareSection('$fcmUri');");
+          }
           widget.fcmUri = null;
+          print('widget.fcmUri ${widget.fcmUri}');
         }
         break;
       case "register":
@@ -317,14 +322,16 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       case "changeNetwork":
         logD.i('changeNetwork');
         if (mounted && context.mounted) {
-          Navigator.push(
+          await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const WifiConnectionPage(isFromWebView: true),
+              builder: (context) => WifiConnectionPage(
+                isFromWebView: true,
+                webViewController: controller,
+              ),
             ),
           );
         }
-
         break;
 
       case "deleteDevice":
@@ -334,8 +341,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           return Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                  builder: (context) => const InitialDeviceHomePage()),
-              (route) => false);
+                  builder: (context) => const InitialDeviceHomePage()), (route) => false);
         }
         break;
 
@@ -444,6 +450,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   Future<bool> onWillPopFunction() async {
+    await controller.reload();
     if (!Platform.isAndroid) {
       return true;
     } else {

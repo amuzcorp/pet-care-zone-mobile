@@ -248,26 +248,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     }
   }
 
-  Future<void> initializeBleFromWebView() async {
-    try {
-      await connectToBleFromWebView();
-      await bleService.initializeConnectedDevice();
-      logD.i('BLE connectedDevice: ${bleService.connectedDevice}');
-    } catch (e) {
-      logD.e('Error during BLE initialization: $e');
-      messageController.add('* BLE 초기화 중 오류가 발생했습니다.');
-    }
-  }
-
-  Future<void> initializeBleService() async {
-    try {
-      await bleService.initializeConnectedDevice();
-      logD.i('BLE connectedDevice: ${bleService.connectedDevice}');
-    } catch (e) {
-      logD.e('Error during BLE initialization: $e');
-    }
-  }
-
   Future<void> navigateToPincodeCheckPage() async {
     _closeDropdown();
     if(mounted) {
@@ -275,10 +255,24 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     }
   }
 
+  Future<void> initializeBleService() async {
+    try {
+      if (isFromWebView) {
+        await bleService.bleConnectToDeviceFromWebView();
+      }
+      await bleService.getCharacteristics();
+    } catch (e) {
+      logD.e("Error during BLE initialization: $e");
+      messageController.add('*BLE 초기화 중 오류 발생: $e');
+      await bleService.bleConnectToDeviceFromWebView();
+    }
+  }
+
   Future<void> connectToWifiAndDevice() async {
     if (!await checkWifiConnection()) return;
     if (!checkPassword()) return;
-    if (bleService?.connectedDevice == null) {
+    if (bleService.connectedDevice == null) {
+      logD.e('connectedDevice is null');
       messageController.add('* BLE 연결을 확인해주세요.');
       return;
     }
@@ -289,11 +283,11 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
       await Future.delayed(const Duration(seconds: 3));
-      if (isFromWebView) {
-        widget.webViewController!.runJavaScript("localStorage.setItem('ssid', '$selectedWifi');");
-        await completer.future;
-        if(mounted) {
-          return Navigator.of(context).pop();
+      if (isFromWebView && widget.webViewController != null) {
+        widget.webViewController!.runJavaScript("updateSSID('$selectedWifi')");
+        if (mounted && !completer.isCompleted) {
+          completer.complete();
+          return Navigator.pop(context, true);
         }
       }
       connectSdkService.startScan();
@@ -312,7 +306,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await completer.future;
     } catch (e) {
       errorListener(e);
-    } finally {
       setState(() {
         isLoading = false;
       });
@@ -330,20 +323,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     return true;
   }
 
-  Future connectToBleFromWebView() async {
-    final connectedDevice = await deviceService.getConnectedBleDevice();
-    if (connectedDevice != null) {
-      try {
-        await connectedDevice.connect();
-        logD.i('connected to device ble.');
-      } catch (e) {
-        logD.e('Failed to reconnect: $e');
-      }
-    } else {
-      logD.e('No previously connected device found.');
-    }
-  }
-
   void errorListener(error) {
     String bleErrorText = e.toString().toLowerCase();
     if (bleErrorText.contains('disconnect')) {
@@ -352,6 +331,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       messageController.add('블루투스 연결이 끊어졌어요. 제품의 블루투스를 먼저 켜주세요.');
     } else {
       messageController.add('에러가 발생했어요. $error');
+      connectToWifiAndDevice();
     }
     print('bleErrorText $error');
   }
@@ -367,12 +347,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   @override
   void didChangeDependencies() async {
     super.didChangeDependencies();
-    if (isFromWebView) {
-      await initializeBleFromWebView();
-    } else {
-      await initializeBleService();
-    }
-    await bleService.getCharacteristics();
   }
 
   @override
@@ -382,6 +356,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     wifiService.initialize();
     messageController = messageService.messageController;
     passwordController.clear();
+    initializeBleService();
   }
 
   @override
