@@ -2,27 +2,42 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/services/wifi_service.dart';
 
+import '../utils/logger.dart';
 import 'connect_sdk_service.dart';
 
 class BleService {
+  late BluetoothDevice connectedDevice;
   BluetoothCharacteristic? targetCharacteristic;
-  BluetoothDevice connectedDevice = FlutterBluePlus.connectedDevices.first;
   ConnectSdkService connectSdkService = ConnectSdkService();
   WifiService wifiService = WifiService();
   MessageService messageService = MessageService();
+  DeviceService deviceService = DeviceService();
 
   Uint8List? macAddressArray;
   String? macAddressWithSeparatorString = "";
 
-  Future initializeConnectedDevice() async {
-    BluetoothDevice device = FlutterBluePlus.connectedDevices.first;
-    connectedDevice = device;
+  Future bleConnectToDeviceFromWebView() async {
+    connectedDevice = await deviceService.getConnectedBleDevice();
+    if (connectedDevice != null) {
+      try {
+        await connectedDevice.disconnect();
+        await connectedDevice.connect();
+        logD.i('connected to device ble.');
+      } catch (e) {
+        logD.e('Failed to reconnect: $e');
+      }
+    } else {
+      await connectedDevice.connect();
+      logD.e('No previously connected device found.');
+    }
   }
 
   Future getCharacteristics() async {
+    connectedDevice = FlutterBluePlus.connectedDevices.first;
     if (connectedDevice != null) {
       await Future.delayed(const Duration(seconds: 1));
       List<BluetoothService> services = await connectedDevice.discoverServices();
@@ -34,7 +49,8 @@ class BleService {
         }
       }
     } else {
-      messageService.messageController.add("기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.");
+      logD.e('기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.');
+      messageService.messageController.add("*기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.");
     }
   }
 
@@ -78,6 +94,11 @@ class BleService {
   }
 
   Future<void> writeCharacteristic(String value) async {
+    if (targetCharacteristic == null) {
+      logD.e('Error: targetCharacteristic is null. Cannot write data.');
+      return;
+    }
+
     macAddressWithSeparatorString = macAddressArray
         ?.map((byte) => byte.toRadixString(16).padLeft(2, '0').toUpperCase())
         .join(':');

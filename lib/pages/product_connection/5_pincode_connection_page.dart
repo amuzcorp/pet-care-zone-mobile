@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/ble_service.dart';
@@ -25,6 +26,7 @@ class PincodeConnectionPage extends StatefulWidget {
 }
 
 class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
+  BluetoothDevice connectedDevice = FlutterBluePlus.connectedDevices.first;
   final TextEditingController pincodeController = TextEditingController();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final MessageService messageService = MessageService();
@@ -35,6 +37,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   String? lastLog = "";
   int countdown = 0;
   bool isCountdownRunning = false;
+  bool isProcessingEvent = false;
   Timer? pincodeTimer;
   List<String> errorList = [];
 
@@ -53,27 +56,23 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
 
   void handleLogEvent(String event) async {
     if (mounted) {
-      if (event.contains('error')) {
-        errorList = [];
-        errorList.add(event);
-      }
-
-      if (event.contains("rejected") || event.contains('invalid')) {
+      if (event.contains("rejected") || event.contains('invalid') || event.contains("many")) {
         messageHandler("*PIN Code가 일치하지 않습니다.");
         final deviceInfo = await deviceService.getWebOSDeviceInfo();
         await lunaService.allowPincodeRequest();
         await connectSdkService.requestParingKey(deviceInfo);
       }
 
-      if (event.contains("many")) {
-        startCountdown();
+      if (event.contains('error')) {
+        errorList = [];
+        errorList.add(event);
       }
+      // if (event.contains("many")) {
+      //   startCountdown();
+      // }
 
       if (event.contains('registered')) {
         messageHandler("");
-      }
-
-      if (event.contains('registered')) {
         connectSdkService.stopScan();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
@@ -86,26 +85,26 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
     return messageService.messageController.add(message);
   }
 
-  void startCountdown() {
-    if (isCountdownRunning) return;
-
-    isCountdownRunning = true;
-    countdown = 30;
-
-    pincodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      countdown--;
-
-      if (countdown > 0) {
-        messageHandler("*PIN Code 요청이 너무 많아요. $countdown초 후\n뒤로 돌아가 다음 버튼을 다시 눌러주세요.");
-      } else {
-        timer.cancel();
-        pincodeTimer?.cancel();
-        isCountdownRunning = false;
-        messageHandler("*PIN Code 요청을 다시 시도해 주세요.");
-        lastLog = null;
-      }
-    });
-  }
+  // void startCountdown() {
+  //   if (isCountdownRunning) return;
+  //
+  //   isCountdownRunning = true;
+  //   countdown = 30;
+  //
+  //   pincodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+  //     countdown--;
+  //
+  //     if (countdown > 0) {
+  //       messageHandler("*PIN Code 요청이 너무 많아요. $countdown초 후\n뒤로 돌아가 다음 버튼을 다시 눌러주세요.");
+  //     } else {
+  //       timer.cancel();
+  //       pincodeTimer?.cancel();
+  //       isCountdownRunning = false;
+  //       messageHandler("*PIN Code 요청을 다시 시도해 주세요.");
+  //       lastLog = null;
+  //     }
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +117,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide5),
           PincodeInput(pincodeController: pincodeController),
           boxH(12),
-          Text("MAC : ${bleService.connectedDevice.remoteId.toString()}", style: TextStyle(color: ColorConstants.appBarIconColor),),
+          Text("MAC : ${connectedDevice!.remoteId.toString()}", style: TextStyle(color: ColorConstants.appBarIconColor),),
           StreamBuilder<String>(
             stream: messageService.messageController.stream,
             builder: (context, snapshot) {

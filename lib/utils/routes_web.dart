@@ -1,12 +1,14 @@
 import '../constants/api_urls.dart';
 
+const List<String> historyPeriods = ['day', 'week', 'month'];
+
 class RoutesWeb {
   final String path;
   final String url;
 
   RoutesWeb(this.path, this.url);
 }
-final historyPeriod = ['day', 'week', 'month'];
+
 final List<RoutesWeb> routesWeb = [
   RoutesWeb('/main', ApiUrls.webViewUrl),
   RoutesWeb('/ai_health', ApiUrls.aiHealthUrl),
@@ -17,9 +19,9 @@ final List<RoutesWeb> routesWeb = [
   ...generateHistoryRoutes('/stayed_time_history', ApiUrls.stayedTimeHistory),
 ];
 
+// Function to dynamically generate history routes for each period
 List<RoutesWeb> generateHistoryRoutes(String basePath, String baseUrl) {
-  final periods = ['day', 'week', 'month'];
-  return periods
-      .map((period) => RoutesWeb('${basePath}_$period', baseUrl))
-      .toList();
+  return historyPeriods.map((period) {
+    return RoutesWeb('${basePath}_$period', baseUrl);
+  }).toList();
 }

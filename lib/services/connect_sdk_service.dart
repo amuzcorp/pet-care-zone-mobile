@@ -51,7 +51,7 @@ class ConnectSdkService {
     yield* logStreamController.stream;
   }
 
-  void updateMatchedDevice(Map<String, dynamic> device) {
+  updateMatchedDevice(Map<String, dynamic> device) {
     matchedWebosDevice = device;
     matchedDeviceController.add(device);
   }
@@ -86,19 +86,18 @@ class ConnectSdkService {
     return collectedLogs;
   }
 
-  findMatchedDevice() {
+  Future findMatchedDevice() async {
     if (bleList.isNotEmpty && devices.isNotEmpty) {
       final matchedDevice = devices.firstWhere((webOSDevice) => bleList.any((bleDevice) =>
         webOSDevice['friendlyName'].trim() == bleDevice['platformName'].trim()),
         orElse: () => {},
       );
-      updateMatchedDevice(matchedDevice);
-      print('matchedWebosDevice $matchedWebosDevice');
+      await updateMatchedDevice(matchedDevice);
     }
   }
 
   Future<void> startScan() async {
-    scanTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
+    scanTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       try {
         logD.i("Scanning...");
         channel.invokeMethod('startScan');
@@ -126,6 +125,9 @@ class ConnectSdkService {
   }
 
   Future startBleScan() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isPermitted = prefs.getBool('isPermitted') ?? false;
+
     bleScanTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
       await FlutterBluePlus.startScan(
         androidScanMode: AndroidScanMode.balanced,
@@ -159,7 +161,9 @@ class ConnectSdkService {
           }
         }
       } else {
-        permissionCheck.requestPermission();
+        if (!isPermitted) {
+          permissionCheck.requestPermission();
+        }
       }
 
       if (!bleStreamController.isClosed) {
