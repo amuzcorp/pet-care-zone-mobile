@@ -8,7 +8,7 @@ class ApiUrls {
   static const String regMobileToken = '$baseUrl/member/mobile';
 
   /// WebView Urls
-  // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
+  static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
   static const String home = '/home';
   static const String aiHealthUrl = '/ai-health';
 
@@ -27,7 +27,7 @@ class ApiUrls {
     'stayedTime': '/history/stayed-time',
   };
 
-  static const String webViewUrl = 'http://192.168.200.75:5173';
+  // static const String webViewUrl = 'http://192.168.200.75:5173';
 
   /// WebOS Urls
   static const String allowPincodeRequest = 'luna-send -n 1 -f luna://com.webos.service.secondscreen.gateway/unpairAll';
