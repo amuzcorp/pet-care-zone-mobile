@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:petcarezone/utils/permissionCheck.dart';
+import 'package:petcarezone/utils/check_permission.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/font_constants.dart';

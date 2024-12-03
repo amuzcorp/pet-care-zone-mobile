@@ -3,10 +3,8 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
-import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';

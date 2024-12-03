@@ -7,6 +7,7 @@ import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/services/user_service.dart';
 import 'package:petcarezone/utils/logger.dart';
 import 'package:petcarezone/utils/routes_web.dart';
+import 'package:petcarezone/utils/webview_state_manager.dart';
 import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 
 import 'firebase_options.dart';
@@ -30,7 +31,7 @@ class MyApp extends StatefulWidget {
 
 class MyAppState extends State<MyApp> {
   final AppLifecycleStateChecker lifecycleObserver = AppLifecycleStateChecker();
-  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+  final WebViewStateManager stateManager = WebViewStateManager();
   final UserService userService = UserService();
   late Future<Widget> _initialPage;
 
@@ -44,6 +45,8 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    logD.e('stateManager.isWebViewActive  ${stateManager.isWebViewActive }');
+
     return MaterialApp(
       navigatorKey: lifecycleObserver.navigatorKey,
       debugShowCheckedModeBanner: false,
@@ -53,12 +56,7 @@ class MyAppState extends State<MyApp> {
       onGenerateRoute: (RouteSettings settings) {
         logD.i("Navigating to: ${settings.name}");
 
-        final route = routesWeb.firstWhere((route) => route.path == settings.name,
-          orElse: () {
-            logD.e("Route not found for: ${settings.name}");
-            return RoutesWeb('/main', ApiUrls.webViewUrl);
-          },
-        );
+        final route = routesWeb.firstWhere((route) => route.path == settings.name);
 
         final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
           orElse: () {
@@ -66,14 +64,19 @@ class MyAppState extends State<MyApp> {
             return '';
           },
         );
-
-        return MaterialPageRoute(
-          builder: (context) => WebViewPage(
-            uri: Uri.parse(ApiUrls.webViewUrl),
-            fcmUri: Uri.parse(route.url),
-            historyPeriod: history,
-          ),
-        );
+        if (stateManager.isWebViewActive) {
+          String url = route.url;
+          if (url.contains('http')) { url = '/main';}
+          stateManager.controller!.runJavaScript("navigateToPetCareSection('$url', '$history');");
+        } else {
+          return MaterialPageRoute(
+            builder: (context) => WebViewPage(
+              uri: Uri.parse(ApiUrls.webViewUrl),
+              fcmUri: Uri.parse(route.url),
+              historyPeriod: history,
+            ),
+          );
+        }
       },
 
       home: FutureBuilder<Widget>(
