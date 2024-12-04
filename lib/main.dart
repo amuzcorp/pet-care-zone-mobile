@@ -55,24 +55,24 @@ class MyAppState extends State<MyApp> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         logD.i("Navigating to: ${settings.name}");
-
         final route = routesWeb.firstWhere((route) => route.path == settings.name);
-
         final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
           orElse: () {
             logD.e("History period not found for: ${settings.name}");
             return '';
           },
         );
+        String url = route.url.contains('http') ? '/petcarezone' : route.url;
+        /// Webview에서 navigate
         if (stateManager.isWebViewActive) {
-          String url = route.url;
-          if (url.contains('http')) { url = '/main';}
           stateManager.controller!.runJavaScript("navigateToPetCareSection('$url', '$history');");
-        } else {
+        }
+        /// App에서 navigate
+        if (!stateManager.isWebViewActive) {
           return MaterialPageRoute(
             builder: (context) => WebViewPage(
               uri: Uri.parse(ApiUrls.webViewUrl),
-              fcmUri: Uri.parse(route.url),
+              fcmUri: Uri.parse(url),
               historyPeriod: history,
             ),
           );

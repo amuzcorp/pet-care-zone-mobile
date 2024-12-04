@@ -43,7 +43,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
-  // final WebViewController controller = WebViewController();
   final WebViewStateManager stateManager = WebViewStateManager();
   final UserService userService = UserService();
   final LunaService lunaService = LunaService();
@@ -303,11 +302,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         if (widget.fcmUri != null) {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
-          if (widget.historyPeriod!.isNotEmpty) {
-            await stateManager.controller!.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
-          } else {
-            await stateManager.controller!.runJavaScript("navigateToPetCareSection('$fcmUri');");
-          }
+          await stateManager.controller!.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
           widget.fcmUri = null;
           print('widget.fcmUri ${widget.fcmUri}');
         }
@@ -391,14 +386,18 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       default:
         if (message.message.startsWith('data:image/png')) {
           return await saveFile(message.message, 'png');
-        } else if (message.message.startsWith('data:video/mp4')) {
+        }
+        if (message.message.startsWith('data:video/mp4')) {
           return saveFile(message.message, 'mp4');
-        } else if (message.message.startsWith("tel:")) {
+        }
+        if (message.message.startsWith("tel:")) {
           _makePhoneCall(message.message);
-        } else if (message.message.startsWith("aiCamGuideImage:")) {
+        }
+        if (message.message.startsWith("aiCamGuideImage:")) {
           String base64String = message.message.split(':')[1];
           aiPresetImg = base64String.isNotEmpty ? base64Decode(base64String) : null;
-        } else if (message.message.startsWith("openAICamAtFlutter:")) {
+        }
+        if (message.message.startsWith("openAICamAtFlutter:")) {
           String type = message.message.split(':')[1];
           if (mounted) {
             Navigator.push(
@@ -451,7 +450,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   }
 
   Future<bool> onWillPopFunction() async {
-    await stateManager.controller!.reload();
     if (!Platform.isAndroid) {
       return true;
     } else {
