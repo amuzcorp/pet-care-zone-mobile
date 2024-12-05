@@ -13,7 +13,7 @@ final List<RoutesWeb> routesWeb = [
   RoutesWeb('/petcarezone', ApiUrls.webViewUrl),
   RoutesWeb('/ai_health', ApiUrls.aiHealthUrl),
   RoutesWeb('/timeline', ApiUrls.timelineUrl),
-  RoutesWeb('/camera', ApiUrls.liveCamUrl),
+  RoutesWeb('/live_cam', ApiUrls.liveCamUrl),
   RoutesWeb('/ai_diagnosis_dislocation', ApiUrls.aiDislocation),
   RoutesWeb('/ai_diagnosis_teeth', ApiUrls.aiTeeth),
   RoutesWeb('/ai_diagnosis_obesity', ApiUrls.aiObesity),
