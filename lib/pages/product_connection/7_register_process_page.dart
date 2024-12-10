@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/image_constants.dart';
@@ -75,7 +76,7 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
     return BasicPage(
       showAppBar: true,
       topHeight: 70,
-      description: "추가가 끝날 때까지 Pet Care Zone\n과 거리를 가깝게 유지해주세요.",
+      description: "first_use.register.connect_to_device.register_process.title".tr(),
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide7),
@@ -115,9 +116,9 @@ class _RegisterProcessPageState extends State<RegisterProcessPage> {
             },
           ),
           const SizedBox(height: 20),
-          const Text(
-            "곧 끝나요.",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
+          Text(
+            "first_use.register.connect_to_device.register_process.done".tr(),
+            style: const TextStyle(fontSize: 16, color: Colors.grey),
           ),
         ],
       ),

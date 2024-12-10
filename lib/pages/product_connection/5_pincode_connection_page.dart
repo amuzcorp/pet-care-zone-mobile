@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/image_constants.dart';
@@ -57,7 +58,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   void handleLogEvent(String event) async {
     if (mounted) {
       if (event.contains("rejected") || event.contains('invalid') || event.contains("many")) {
-        messageHandler("*PIN Code가 일치하지 않습니다.");
+        messageHandler("first_use.register.connect_to_device.pincode.connect.error.wrong_pincode".tr());
         final deviceInfo = await deviceService.getWebOSDeviceInfo();
         await lunaService.allowPincodeRequest();
         await connectSdkService.requestParingKey(deviceInfo);
@@ -110,7 +111,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "Pet Care Zone 제품 화면에 표시된\nPIN Code를 입력하세요.",
+      description: "first_use.register.connect_to_device.pincode.connect.title".tr(),
       topHeight: 70,
       contentWidget: Column(
         children: [
@@ -150,7 +151,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
         ],
       ),
       bottomButton: BasicButton(
-        text: "입력했어요",
+        text: "first_use.register.connect_to_device.pincode.connect.entered".tr(),
         onPressed: () async {
           if (pincodeController.text.length < 8){
             messageHandler("*PIN Code 8자리를 입력해 주세요.");

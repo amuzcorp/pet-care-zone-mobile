@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
@@ -11,7 +12,7 @@ import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:petcarezone/utils/webview_state_manager.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
@@ -23,9 +24,8 @@ import '../../widgets/indicator/indicator.dart';
 import '../../widgets/page/basic_page.dart';
 
 class WifiConnectionPage extends StatefulWidget {
-  const WifiConnectionPage({super.key, required this.isFromWebView, this.webViewController});
+  const WifiConnectionPage({super.key, required this.isFromWebView});
   final bool isFromWebView;
-  final WebViewController? webViewController;
 
   @override
   State<WifiConnectionPage> createState() => _WifiConnectionPageState();
@@ -39,6 +39,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final TextEditingController passwordController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
+  final WebViewStateManager webViewStateManager = WebViewStateManager();
 
   final Completer<void> completer = Completer<void>();
   late StreamController<String> messageController;
@@ -283,8 +284,8 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
       await Future.delayed(const Duration(seconds: 3));
-      if (isFromWebView && widget.webViewController != null) {
-        widget.webViewController!.runJavaScript("updateSSID('$selectedWifi')");
+      if (isFromWebView && webViewStateManager.controller != null) {
+        webViewStateManager.controller!.runJavaScript("updateSSID('$selectedWifi')");
         if (mounted && !completer.isCompleted) {
           completer.complete();
           return Navigator.pop(context, true);
@@ -373,13 +374,13 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "Pet Care Zone에 연결할 Wi-Fi\n네트워크를 아래 화면에서 선택해주세요.",
+      description: "first_use.register.connect_to_wifi.title".tr(),
       topHeight: 50,
       contentWidget: Column(
         children: [
           Row(
             children: [
-              FontConstants.inputLabelText('Wi-Fi 네트워크'),
+              FontConstants.inputLabelText('first_use.register.connect_to_wifi.wifi_network'.tr()),
             ],
           ),
           boxH(10),
@@ -387,7 +388,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
           boxH(20),
           Row(
             children: [
-              FontConstants.inputLabelText('비밀번호'),
+              FontConstants.inputLabelText('first_use.register.connect_to_wifi.password'.tr()),
             ],
           ),
           boxH(10),
@@ -406,7 +407,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
         ],
       ),
       bottomButton: BasicButton(
-        text: "연결하기",
+        text: "first_use.register.connect_to_wifi.connect".tr(),
         onPressed: connectToWifiAndDevice,
       ),
     );

@@ -40,20 +40,4 @@ class ApiUrls {
     'uri': 'ssap://com.webos.service.petcareservice/mqtt/setPetInfo',
     'payload': {"userId" : "", "petId" : 0}
   };
-
-  static Map<String, String> getLunaWifiConnectUrl(String wifi, String passKey) {
-    return {
-      'uri': 'ssap://com.webos.service.wifi/connect',
-      'payload': jsonEncode({
-        'ssid': wifi,
-        'wasCreatedWithJoinOther': true,
-        'security': {
-          'securityType': 'psk',
-          'simpleSecurity': {
-            'passKey': passKey
-          }
-        }
-      })
-    };
-  }
 }

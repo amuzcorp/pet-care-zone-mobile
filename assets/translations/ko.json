@@ -1,0 +1,60 @@
+{
+  "language": "KOR",
+
+  "first_use": {
+    "login": {
+      "sign_in": "로그인",
+      "id": "ID",
+      "password": "비밀번호"
+    },
+    "register": {
+      "home": {
+        "title" : "홈",
+        "card": "펫케어존\n등록"
+      },
+      "power_guide": {
+        "power_cord_connect": "펫케어존의 전원 코드를\n연결해 전원을 켜주세요.",
+        "power_on": "전원을 켰어요."
+      },
+      "connect_to_ble": {
+        "title": "연결 가능한 제품",
+        "nearby_product": "주변 제품"
+      },
+      "connect_to_wifi": {
+        "title": "펫케어존에 연결할 Wi-Fi\n네트워크를 아래 화면에서 선택해주세요.",
+        "wifi_network": "Wi-Fi 네트워크",
+        "password": "비밀번호",
+        "connect": "연결하기"
+      },
+      "connect_to_device": {
+        "pincode": {
+          "check": {
+            "title": "펫케어존 제품 화면의\n8자리 PIN Code를 확인해주세요.",
+            "next": "다음"
+          },
+          "connect": {
+            "title": "펫케어존 제품 화면에 표시된\nPIN Code를 입력하세요.",
+            "entered": "입력했어요",
+            "error": {
+              "wrong_pincode": "*PIN Code가 일치하지 않습니다."
+            }
+          }
+        },
+        "register_guide": {
+          "title": "펫케어존 1m 이내에서\n기다려주세요. 가까울 수록 연결이\n잘 돼요."
+        },
+        "register_process": {
+          "title": "추가가 끝날 때까지 펫케어존과 거리를 가깝게 유지해주세요.",
+          "done": "곧 끝나요."
+        },
+        "register": {
+          "title": "펫케어존 추가를\n완료했어요.",
+          "product_name": "제품 닉네임",
+          "change_product_name": "제품 이름을 바꿀 수 있어요.",
+          "register_additional_information": "더 정확한 서비스를 위해 추가 정보 등록하기 >",
+          "register_pet_profile": "펫 프로필 등록"
+        }
+      }
+    }
+  }
+}
