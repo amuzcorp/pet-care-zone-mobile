@@ -436,8 +436,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     Future.delayed(
         const Duration(milliseconds: 150),
         () => {
-              stateManager.runJavaScript(
-                  'window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
+              stateManager.runJavaScript('window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
             });
   }
 
@@ -490,7 +489,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (splittedUrl.isEmpty) {
       return true;
     }
-
     String path = splittedUrl.last;
     if (path == 'home' || path == 'register' || path == 'timeline' || path == 'ai-health') {
       logD.i("Flutter 경로에서 뒤로가기 처리.");
