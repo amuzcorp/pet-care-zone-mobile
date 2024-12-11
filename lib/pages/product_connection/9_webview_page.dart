@@ -340,6 +340,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             MaterialPageRoute(
               builder: (context) => const DeviceListPage(
                 isFromWebView: true,
+                webViewController: stateManager.controller,
               ),
             ),
           );

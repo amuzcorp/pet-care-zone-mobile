@@ -11,6 +11,7 @@ import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/services/user_service.dart';
 import 'package:petcarezone/utils/logger.dart';
 import 'package:petcarezone/utils/routes_web.dart';
+import 'package:petcarezone/utils/webview_state_manager.dart';
 import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 
 import 'firebase_options.dart';
@@ -50,7 +51,7 @@ class PetCareZone extends StatefulWidget {
 
 class PetCareZoneState extends State<PetCareZone> {
   final AppLifecycleStateChecker lifecycleObserver = AppLifecycleStateChecker();
-  final RouteObserver<PageRoute> routeObserver = RouteObserver<PageRoute>();
+  final WebViewStateManager stateManager = WebViewStateManager();
   final UserService userService = UserService();
   late Future<Widget> _initialPage;
 
@@ -64,6 +65,8 @@ class PetCareZoneState extends State<PetCareZone> {
 
   @override
   Widget build(BuildContext context) {
+    logD.e('stateManager.isWebViewActive  ${stateManager.isWebViewActive }');
+
     return MaterialApp(
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
@@ -75,28 +78,28 @@ class PetCareZoneState extends State<PetCareZone> {
       ),
       onGenerateRoute: (RouteSettings settings) {
         logD.i("Navigating to: ${settings.name}");
-
-        final route = routesWeb.firstWhere((route) => route.path == settings.name,
-          orElse: () {
-            logD.e("Route not found for: ${settings.name}");
-            return RoutesWeb('/main', ApiUrls.webViewUrl);
-          },
-        );
-
+        final route = routesWeb.firstWhere((route) => route.path == settings.name);
         final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
           orElse: () {
             logD.e("History period not found for: ${settings.name}");
             return '';
           },
         );
-
-        return MaterialPageRoute(
-          builder: (context) => WebViewPage(
-            uri: Uri.parse(ApiUrls.webViewUrl),
-            fcmUri: Uri.parse(route.url),
-            historyPeriod: history,
-          ),
-        );
+        String url = route.url.contains('http') ? '/petcarezone' : route.url;
+        /// Webview에서 navigate
+        if (stateManager.isWebViewActive) {
+          stateManager.controller!.runJavaScript("navigateToPetCareSection('$url', '$history');");
+        }
+        /// App에서 navigate
+        if (!stateManager.isWebViewActive) {
+          return MaterialPageRoute(
+            builder: (context) => WebViewPage(
+              uri: Uri.parse(ApiUrls.webViewUrl),
+              fcmUri: Uri.parse(url),
+              historyPeriod: history,
+            ),
+          );
+        }
       },
 
       home: FutureBuilder<Widget>(

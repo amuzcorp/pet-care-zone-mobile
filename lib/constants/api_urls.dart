@@ -8,9 +8,20 @@ class ApiUrls {
   static const String regMobileToken = '$baseUrl/member/mobile';
 
   /// WebView Urls
-  // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
-  static const String home = '/home';
+  static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
+  // static const String webViewUrl = 'http://192.168.200.75:5173';
+
+  /// timeline Url
+  static const String timelineUrl = '/timeline';
+
+  /// live Cam Url
+  static const String liveCamUrl = '/camera';
+
+  /// ai-health Urls
   static const String aiHealthUrl = '/ai-health';
+  static const String aiDislocation = '$aiHealthUrl/patella';
+  static const String aiTeeth = '$aiHealthUrl/oral';
+  static const String aiObesity = '$aiHealthUrl/bmi';
 
   /// history Urls
   static const String tempHistory = '/history/temperature';
@@ -18,16 +29,6 @@ class ApiUrls {
   static const String heartHistory = '/history/heart-rate';
   static const String respHistory = '/history/respiratory-rate';
   static const String stayedTimeHistory = '/history/stayed-time';
-
-  static const Map<String, String> historyUrls = {
-    'temperature': '/history/temperature',
-    'weight': '/history/weight',
-    'heart': '/history/heart-rate',
-    'respiratory': '/history/respiratory-rate',
-    'stayedTime': '/history/stayed-time',
-  };
-
-  static const String webViewUrl = 'http://192.168.200.75:5173';
 
   /// WebOS Urls
   static const String allowPincodeRequest = 'luna-send -n 1 -f luna://com.webos.service.secondscreen.gateway/unpairAll';
