@@ -10,12 +10,18 @@ class RoutesWeb {
 }
 
 final List<RoutesWeb> routesWeb = [
-  RoutesWeb('/main', ApiUrls.webViewUrl),
+  RoutesWeb('/petcarezone', ApiUrls.webViewUrl),
   RoutesWeb('/ai_health', ApiUrls.aiHealthUrl),
+  RoutesWeb('/timeline', ApiUrls.timelineUrl),
+  RoutesWeb('/live_cam', ApiUrls.liveCamUrl),
+  RoutesWeb('/ai_diagnosis_dislocation', ApiUrls.aiDislocation),
+  RoutesWeb('/ai_diagnosis_teeth', ApiUrls.aiTeeth),
+  RoutesWeb('/ai_diagnosis_obesity', ApiUrls.aiObesity),
   ...generateHistoryRoutes('/temp_history', ApiUrls.tempHistory),
   ...generateHistoryRoutes('/weight_history', ApiUrls.weightHistory),
-  ...generateHistoryRoutes('/heart_history', ApiUrls.heartHistory),
-  ...generateHistoryRoutes('/resp_history', ApiUrls.respHistory),
+  ...generateHistoryRoutes('/heart_rate_history', ApiUrls.heartHistory),
+  ...generateHistoryRoutes('/respiratory_rate_history', ApiUrls.respHistory),
+  ...generateHistoryRoutes('/stay_time_history', ApiUrls.stayedTimeHistory),
   ...generateHistoryRoutes('/stayed_time_history', ApiUrls.stayedTimeHistory),
 ];
 
