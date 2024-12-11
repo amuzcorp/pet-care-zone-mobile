@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/font_constants.dart';
@@ -34,6 +35,8 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final DeviceService deviceService = DeviceService();
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
+  Locale eng = const Locale('en');
+  Locale kor = const Locale('ko');
   String deviceName = "";
   String? fcmToken = "";
   bool isRegistered = false;
@@ -128,9 +131,15 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
                   setState(() {
                     isTapOn = !isTapOn;
                   });
+                  if (context.locale == kor) {
+                    await context.setLocale(eng);
+                  } else {
+                    await context.setLocale(kor);
+                  }
+
                 },
                 child: Text(
-                  '홈',
+                  'first_use.register.home.title'.tr(),
                   style: TextStyle(
                     fontSize: FontConstants.descriptionTextSize,
                     fontWeight: FontWeight.bold,

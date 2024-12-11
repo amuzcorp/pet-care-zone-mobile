@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:petcarezone/constants/color_constants.dart';
@@ -79,7 +80,7 @@ class _InitialDeviceRegisterCardState extends State<InitialDeviceRegisterCard> {
                         BlendMode.srcATop,
                       )),
                   boxH(10),
-                  const Text("Pet Care Zone\n등록"),
+                  Text("first_use.register.card".tr()),
                 ],
               ) :
               Column(

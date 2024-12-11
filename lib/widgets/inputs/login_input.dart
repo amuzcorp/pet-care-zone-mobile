@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import '../../constants/font_constants.dart';
@@ -25,7 +26,7 @@ class LoginInput extends StatelessWidget {
         children: [
           textFormFieldWidget(
             textAlign: TextAlign.start,
-            label: FontConstants.inputLabelText("아이디"),
+            label: FontConstants.inputLabelText("first_use.login.id".tr()),
             controller: emailController,
             obscureText: false,
             validator: (value) {
@@ -41,7 +42,7 @@ class LoginInput extends StatelessWidget {
           boxH(20),
           textFormFieldWidget(
             textAlign: TextAlign.start,
-            label: FontConstants.inputLabelText("비밀번호"),
+            label: FontConstants.inputLabelText("first_use.login.password"),
             controller: passwordController,
             obscureText: true,
             validator: (value) {

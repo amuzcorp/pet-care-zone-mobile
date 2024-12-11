@@ -12,7 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/ai_health_camera_page.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
-import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
+import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
@@ -78,11 +78,27 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
   }
 
+  // Future<void> initializePage() async {
+  //   await webViewInit();
+  //   setState(() {
+  //     webViewWidget = buildWebViewWidget();
+  //     isWebViewWidgetInitialized = true;
+  //   });
+  // }
   Future<void> initializePage() async {
-    await webViewInit();
+    setState(() {
+      webViewWidget = const Center(child: CircularProgressIndicator());
+      isWebViewWidgetInitialized = true;
+    });
+
+    // WebView와 MQTT 병렬 실행
+    await Future.wait([
+      webViewInit(),
+      mqttInit(),
+    ]);
+
     setState(() {
       webViewWidget = buildWebViewWidget();
-      isWebViewWidgetInitialized = true;
     });
   }
 
@@ -99,13 +115,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           },
         ),
       )
-      ..loadRequest(Uri.parse(ApiUrls.webViewUrl))
+      // ..loadRequest(Uri.parse(ApiUrls.webViewUrl))
       ..addJavaScriptChannel(
         'Flutter',
         onMessageReceived: (JavaScriptMessage message) async {
           await jsChannelListener(message);
         },
       );
+    await stateManager.controller!.loadRequest(widget.uri);
     final platformController = stateManager.controller!.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
@@ -199,10 +216,10 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     final topic = c[0].topic;
 
     if (topic == "iot/petcarezone/topic/events/$deviceId") {
-      stateManager.controller!.runJavaScript("handleEventTopicEvent($pt);");
+      stateManager.runJavaScript("handleEventTopicEvent($pt);");
     }
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
-      stateManager.controller!.runJavaScript("handleStateTopicEvent($pt);");
+      stateManager.runJavaScript("handleStateTopicEvent($pt);");
     }
     logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
@@ -228,7 +245,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   Future setUserInfo() async {
     final accessToken = await userService.getAccessToken();
-    await stateManager.controller!.runJavaScript("""
+    await stateManager.runJavaScript("""
     localStorage.setItem('accessToken', '$accessToken');
     localStorage.setItem('userId', '$userId');
     localStorage.setItem('petId', '${petId == 0 ? "" : petId}');
@@ -302,7 +319,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         if (widget.fcmUri != null) {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
-          await stateManager.controller!.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
+          await stateManager.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
           widget.fcmUri = null;
           print('widget.fcmUri ${widget.fcmUri}');
         }
@@ -312,7 +329,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         isRegisterPage = true;
         break;
       case "setMobileStatusBarHeight":
-        await stateManager.controller!.runJavaScript("window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
+        await stateManager.runJavaScript("window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
         break;
 
       case "changeNetwork":
@@ -321,7 +338,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           await Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => WifiConnectionPage(
+              builder: (context) => const DeviceListPage(
                 isFromWebView: true,
                 webViewController: stateManager.controller,
               ),
@@ -420,7 +437,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     Future.delayed(
         const Duration(milliseconds: 150),
         () => {
-              stateManager.controller!.runJavaScript(
+              stateManager.runJavaScript(
                   'window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
             });
   }
@@ -436,7 +453,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         img.Image resizedImage = img.copyResize(originalImage, width: 500);
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         String? base64String = base64Encode(compressedBytes);
-        stateManager.controller!.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
+        stateManager.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -452,58 +469,60 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Future<bool> onWillPopFunction() async {
     if (!Platform.isAndroid) {
       return true;
-    } else {
-      final currentUrl = await stateManager.controller!.currentUrl();
-      if (currentUrl == null) {
-        return true;
-      }
-      if (isShowModal) {
-        stateManager.controller!.runJavaScript("closeModalAtFlutter();");
-        return false;
-      }
-      if (isShowSubBottomSheet) {
-        stateManager.controller!.runJavaScript("closeSubBottomSheetAtFlutter();");
-        return false;
-      }
-      if (isShowBottomSheet) {
-        stateManager.controller!.runJavaScript("closeBottomSheetAtFlutter();");
-        return false;
-      }
+    }
+    final currentUrl = await stateManager.controller!.currentUrl();
+    if (currentUrl == null) {
+      return true;
+    }
+    if (isShowModal) {
+      stateManager.runJavaScript("closeModalAtFlutter();");
+      return false;
+    }
+    if (isShowSubBottomSheet) {
+      stateManager.runJavaScript("closeSubBottomSheetAtFlutter();");
+      return false;
+    }
+    if (isShowBottomSheet) {
+      stateManager.runJavaScript("closeBottomSheetAtFlutter();");
+      return false;
+    }
 
-      List splittedUrl = currentUrl.split('/');
-      if (splittedUrl.isEmpty) {
-        return true;
-      }
+    List splittedUrl = currentUrl.split('/');
+    if (splittedUrl.isEmpty) {
+      return true;
+    }
 
-      String path = splittedUrl[splittedUrl.length - 1];
-
-      if (path == 'home' ||
-          path == 'register' ||
-          path == 'timeline' ||
-          path == 'ai-health') {
-        if (mounted) {
-          if (widget.backPage != null) {
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(builder: (context) => widget.backPage!),
-              (route) => false,
-            );
-          } else {
-            Navigator.pop(context);
-          }
-        }
-      } else {
-        if (splittedUrl.contains("ai-health") && splittedUrl.contains("result")) {
-          stateManager.controller!.runJavaScript("window.moveBackByStep(-3)");
+    String path = splittedUrl.last;
+    if (path == 'home' || path == 'register' || path == 'timeline' || path == 'ai-health') {
+      logD.i("Flutter 경로에서 뒤로가기 처리.");
+      if (mounted) {
+        if (widget.backPage != null) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => widget.backPage!),
+                (route) => false,
+          );
         } else {
-          stateManager.controller!.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }");
+          Navigator.pop(context);
         }
+        return false;
+      }
+    } else {
+      if (splittedUrl.contains("ai-health") && splittedUrl.contains("result")) {
+        logD.i("AI Health 결과 페이지 뒤로가기.");
+        stateManager.runJavaScript("window.moveBackByStep(-3);");
+      } else {
+        print('currentUrlcurrentUrl $currentUrl');
+        logD.i("JavaScript로 일반 뒤로가기 처리.");
+        stateManager.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }"
+        );
       }
       return false;
     }
+    return true;
   }
 
-  void backPageNavigator() {
+  void backPageNavigator() async {
     if (widget.backPage != null) {
       Navigator.pushAndRemoveUntil(
         context,

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/font_constants.dart';
@@ -9,8 +10,8 @@ import '../../widgets/lists/device_list.dart';
 import '../../widgets/page/basic_page.dart';
 
 class DeviceListPage extends StatefulWidget {
-  const DeviceListPage({super.key});
-
+  const DeviceListPage({super.key, required this.isFromWebView});
+  final bool isFromWebView;
   @override
   State<DeviceListPage> createState() => _DeviceListPageState();
 }
@@ -35,13 +36,13 @@ class _DeviceListPageState extends State<DeviceListPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "연결 가능한 제품",
+      description: "first_use.register.connect_to_ble.title".tr(),
       contentWidget: Column(
         children: [
           boxH(80),
           Row(
             children: [
-              FontConstants.inputLabelText('주변 제품'),
+              FontConstants.inputLabelText('first_use.register.connect_to_ble.nearby_product'.tr()),
               SizedBox(
                 width: 30,
                 height: 30,
@@ -56,6 +57,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
           ),
           boxH(10),
           DeviceList(
+            isFromWebview : widget.isFromWebView,
             onLoadingChanged: (loading) {
               isLoading.value = loading;
             },

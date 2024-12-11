@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/color_constants.dart';
+import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
 import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
@@ -19,8 +20,8 @@ import '../indicator/indicator.dart';
 class DeviceList extends StatefulWidget {
   final ValueChanged<bool>? onLoadingChanged;
 
-  const DeviceList({super.key, this.onLoadingChanged});
-
+  const DeviceList({super.key, this.onLoadingChanged, required this.isFromWebview});
+  final bool isFromWebview;
   @override
   _DeviceListState createState() => _DeviceListState();
 }
@@ -47,11 +48,12 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
 
       /// BLE Data
       await deviceService.saveBleInfo(bluetoothDevice);
+
       if (mounted) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => const WifiConnectionPage(isFromWebView: false),
+            builder: (context) => WifiConnectionPage(isFromWebView: widget.isFromWebview),
           ),
         );
       }

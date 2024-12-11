@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
@@ -13,23 +17,39 @@ import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  //FCM 푸시 알림 관련 초기화
-  FirebaseService.init();
-  FirebaseService.localNotiInit();
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    await EasyLocalization.ensureInitialized();
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  runApp(const MyApp());
+    FirebaseService.init();
+    FirebaseService.localNotiInit();
+
+    runApp(
+      EasyLocalization(
+          supportedLocales: const [
+            Locale('ko'),
+            Locale('en')
+          ],
+          fallbackLocale: const Locale('en'),
+          path: 'assets/translations',
+          child : const PetCareZone()
+      )
+    );
+  }, (error, stack) {
+
+  });
+
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class PetCareZone extends StatefulWidget {
+  const PetCareZone({super.key});
 
   @override
-  MyAppState createState() => MyAppState();
+  PetCareZoneState createState() => PetCareZoneState();
 }
 
-class MyAppState extends State<MyApp> {
+class PetCareZoneState extends State<PetCareZone> {
   final AppLifecycleStateChecker lifecycleObserver = AppLifecycleStateChecker();
   final WebViewStateManager stateManager = WebViewStateManager();
   final UserService userService = UserService();
@@ -48,6 +68,9 @@ class MyAppState extends State<MyApp> {
     logD.e('stateManager.isWebViewActive  ${stateManager.isWebViewActive }');
 
     return MaterialApp(
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
       navigatorKey: lifecycleObserver.navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

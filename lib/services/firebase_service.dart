@@ -5,12 +5,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:petcarezone/services/user_service.dart';
-import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:http/http.dart' as http;
 
 import '../utils/logger.dart';
+import '../widgets/app_life_cycle_state_checker.dart';
 
 class FirebaseService {
   final UserService userService = UserService();
@@ -43,7 +43,23 @@ class FirebaseService {
       onDidReceiveNotificationResponse: onNotificationTap,
       onDidReceiveBackgroundNotificationResponse: onNotificationTap,
     );
+
+    await initializeNotificationChannels();
   }
+
+  static Future<void> initializeNotificationChannels() async {
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'petcarezone_channel',
+      'petcarezone',
+      description: 'This channel is used for petcarezone.',
+      importance: Importance.max,
+    );
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+  }
+
 
   static Future<bool> isAppInForeground() async {
     final WidgetsBinding widgetsBinding = WidgetsBinding.instance;
@@ -120,13 +136,12 @@ class FirebaseService {
       summaryText: body,
     );
 
-
     final AndroidNotificationDetails androidNotificationDetails = AndroidNotificationDetails(
-      'petcarezone_1',
+      'petcarezone_channel',
       'petcarezone',
       icon: '@mipmap/ic_launcher',
       largeIcon: ByteArrayAndroidBitmap.fromBase64String(await getBase64FromImage(imageUrl!)),
-      channelDescription: '',
+      channelDescription: 'This channel is used for petcarezone.',
       importance: Importance.max,
       priority: Priority.high,
       groupAlertBehavior: GroupAlertBehavior.all,

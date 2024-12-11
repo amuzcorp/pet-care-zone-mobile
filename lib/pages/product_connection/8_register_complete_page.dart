@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/icon_constants.dart';
@@ -26,9 +27,9 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final LunaService lunaService = LunaService();
   String deviceId = '';
-  String deviceName = '제품 닉네임';
+  String deviceName = 'first_use.register.connect_to_device.register.product_name.tr'.tr();
   String modelNumber = '';
-  String guideMessage = '제품 이름을 바꿀 수 있어요.';
+  String guideMessage = 'first_use.register.connect_to_device.register.change_product_name'.tr();
 
   Future getWebOSDeviceInfo() async {
     final prefs = await SharedPreferences.getInstance();
@@ -75,7 +76,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: false,
-      description: "Pet Care Zone 추가를\n완료했어요.",
+      description: "first_use.register.connect_to_device.register.title".tr(),
       leadingHeight: 40.0,
       contentWidget: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -100,13 +101,13 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           BasicButton(
-            text: '더 정확한 서비스를 위해 추가 정보 등록하기 >',
+            text: 'first_use.register.connect_to_device.register.register_additional_information'.tr(),
             backgroundColor: Colors.transparent,
             fontColor: ColorConstants.teal,
             fontSize: 15,
           ),
           BasicButton(
-            text: "반려동물 프로필 등록",
+            text: "first_use.register.connect_to_device.register.register_pet_profile".tr(),
             onPressed: () async {
               await registerDeviceInfo();
               if (mounted) {

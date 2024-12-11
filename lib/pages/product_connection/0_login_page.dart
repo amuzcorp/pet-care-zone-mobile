@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/services/user_service.dart';
@@ -13,37 +14,37 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
   final UserService userService = UserService();
-  String? _loginError;
+  String? loginError;
 
-  Future<void> _handleLogin(BuildContext context) async {
+  Future<void> handleLogin(BuildContext context) async {
     setState(() {
-      _loginError = null;
+      loginError = null;
     });
 
-    if (_formKey.currentState?.validate() ?? false) {
+    if (formKey.currentState?.validate() ?? false) {
       try {
         await userService.login(
           context: context,
-          email: _emailController.text,
-          password: _passwordController.text,
+          email: emailController.text,
+          password: passwordController.text,
         );
       } catch (error) {
         setState(() {
-          _loginError = error.toString();
+          loginError = error.toString();
         });
-        _formKey.currentState?.validate();
+        formKey.currentState?.validate();
       }
     }
   }
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
     super.dispose();
   }
 
@@ -54,17 +55,17 @@ class _LoginPageState extends State<LoginPage> {
       backgroundColor: ColorConstants.pageBG,
       leadingHeight: 180.0,
       contentWidget: LoginInput(
-        emailController: _emailController,
-        passwordController: _passwordController,
-        formKey: _formKey,
-        loginError: _loginError,
+        emailController: emailController,
+        passwordController: passwordController,
+        formKey: formKey,
+        loginError: loginError,
       ),
       bottomButton: BasicButton(
-        text: "로그인",
+        text: "first_use.login.sign_in".tr(),
         fontColor: ColorConstants.white,
         width: double.infinity,
         backgroundColor: ColorConstants.teal,
-        apiCall: _handleLogin,
+        apiCall: handleLogin,
       ),
     );
   }

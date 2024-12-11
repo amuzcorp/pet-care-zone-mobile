@@ -1,0 +1,60 @@
+{
+  "language": "ENG",
+
+  "first_use": {
+    "login": {
+      "sign_in": "Sign-in",
+      "id": "ID",
+      "password": "Password"
+    },
+    "register": {
+      "home": {
+        "title" : "Home",
+        "card": "Register Pet Care Zone"
+      },
+      "power_guide": {
+        "power_cord_connect": "Connect the power cord to the Pet Care Zone and power it on.",
+        "power_on": "Power has been turned on."
+      },
+      "connect_to_ble": {
+        "title": "Products available for connection",
+        "nearby_products": "Nearby products"
+      },
+      "connect_to_wifi": {
+        "title": "Select the Wi-Fi network for Pet Care Zone from the screen below.",
+        "wifi_network": "Wi-Fi Network",
+        "password": "Password",
+        "connect": "Connect"
+      },
+      "connect_to_device": {
+        "pincode": {
+          "check": {
+            "title": "Check the 8-digit PIN code on the Pet Care Zone product screen.",
+            "next": "Next"
+          },
+          "connect": {
+            "title": "Check the 8-digit PIN code on the Pet Care Zone product screen.",
+            "entered": "Entered successfully",
+            "error": {
+              "wrong_pincode": "*The PIN Code does not match."
+            }
+          }
+        },
+        "register_guide": {
+          "title": "Please stay within 1 meter of the Pet Care Zone. Closer proximity ensures a better connection."
+        },
+        "register_process": {
+          "title": "Maintain a close distance to the Pet Care Zone until the setup is complete.",
+          "done": "Almost done."
+        },
+        "register": {
+          "title": "Pet Care Zone has been successfully added.",
+          "product_name": "Product name",
+          "change_product_name": "You can change the product name.",
+          "register_additional_information": "Register additional information for more accurate services",
+          "register_pet_profile": "Register Pet Profile"
+        }
+      }
+    }
+  }
+}

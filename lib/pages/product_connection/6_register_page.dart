@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
 import 'package:petcarezone/pages/product_connection/7_register_process_page.dart';
@@ -47,7 +48,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
             return BasicPage(
               showAppBar: true,
-              description: "Pet Care Zone 1m 이내에서\n기다려주세요. 가까울 수록 연결이\n잘 돼요.",
+              description: "first_use.register.connect_to_device.register_guide.title".tr(),
               contentWidget: guideImageWidget(imagePath: ImageConstants.productConnectionGuide6),
             );
           default:

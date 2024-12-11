@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/image_constants.dart';
@@ -10,7 +11,6 @@ import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
 import '../../constants/color_constants.dart';
-import '../../data/models/device_model.dart';
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 
@@ -53,7 +53,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
   Widget build(BuildContext context) {
     return BasicPage(
       showAppBar: true,
-      description: "Pet Care Zone 제품 화면에\n8자리 PIN Code를 확인해주세요.",
+      description: "first_use.register.connect_to_device.pincode.check.title".tr(),
       topHeight: 70,
       contentWidget: Column(
         children: [
@@ -68,7 +68,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
         ],
       ),
       bottomButton: BasicButton(
-        text: "다음",
+        text: "first_use.register.connect_to_device.pincode.check.next".tr(),
         destinationPage: const PincodeConnectionPage(),
         onPressed: () => requestParingKey(),
       ),
