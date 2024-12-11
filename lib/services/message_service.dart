@@ -1,9 +1,20 @@
 import 'dart:async';
 
 class MessageService {
-  StreamController<String> messageController = StreamController<String>.broadcast();
+  static final MessageService _instance = MessageService._internal();
+  factory MessageService() => _instance;
 
-  dispose() {
+  MessageService._internal();
+
+  final StreamController<String> messageController = StreamController<String>.broadcast();
+
+  void addMessage(String message) {
+    if (!messageController.isClosed) {
+      messageController.add(message);
+    }
+  }
+
+  void dispose() {
     messageController.close();
   }
 }

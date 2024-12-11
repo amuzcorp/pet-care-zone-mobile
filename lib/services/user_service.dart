@@ -5,15 +5,14 @@ import 'package:petcarezone/pages/product_connection/0_login_page.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/data/models/user_model.dart';
+import 'package:petcarezone/services/message_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../utils/logger.dart';
 
 class UserService {
   final ApiService apiService = ApiService();
-  final StreamController<UserModel?> _userController = StreamController<UserModel?>.broadcast();
-
-  Stream<UserModel?> get userStream => _userController.stream;
+  final MessageService messageService = MessageService();
 
   Future<Widget> initializeApp() async {
     if (await isTokenValid()) {
@@ -28,34 +27,29 @@ class UserService {
     return prefs.getString('accessToken');
   }
 
-  Future<void> login({
+  Future login({
     required BuildContext context,
     required String email,
     required String password,
   }) async {
-    try {
-      final loginInfo = await apiService.postLogin(
-        email: email,
-        password: password,
-        context: context,
-      );
+    final loginInfo = await apiService.postLogin(
+      email: email,
+      password: password,
+      context: context,
+    );
 
-      if (loginInfo != null) {
-        await saveUserInfo(loginInfo);
-        UserModel user = UserModel.fromJson(loginInfo);
-
-        _userController.add(user);
-
-        if (context.mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const InitialDeviceHomePage(),
-            ),
-          );
-        }
+    if (loginInfo!['message'].contains('Invalid')) {
+      messageService.addMessage("비밀번호가 일치하지 않습니다.");
+    } else {
+      messageService.addMessage("");
+      await saveUserInfo(loginInfo);
+      if (context.mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const InitialDeviceHomePage(),
+          ),
+        );
       }
-    } catch (e) {
-      throw "비밀번호를 확인해주세요.";
     }
   }
 
@@ -112,7 +106,6 @@ class UserService {
     final userJson = prefs.getString('user');
     if (userJson != null) {
       final user = UserModel.fromJson(jsonDecode(userJson));
-      _userController.add(user);
       logD.i('user info : ${jsonEncode(user)}');
       return user;
     }

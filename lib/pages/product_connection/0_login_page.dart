@@ -18,26 +18,16 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final UserService userService = UserService();
-  String? loginError;
 
   Future<void> handleLogin(BuildContext context) async {
-    setState(() {
-      loginError = null;
-    });
-
-    if (formKey.currentState?.validate() ?? false) {
-      try {
-        await userService.login(
-          context: context,
-          email: emailController.text,
-          password: passwordController.text,
-        );
-      } catch (error) {
-        setState(() {
-          loginError = error.toString();
-        });
-        formKey.currentState?.validate();
-      }
+    try {
+      await userService.login(
+        context: context,
+        email: emailController.text,
+        password: passwordController.text,
+      );
+    } catch (error) {
+      formKey.currentState?.validate();
     }
   }
 
@@ -53,12 +43,16 @@ class _LoginPageState extends State<LoginPage> {
     return BasicPage(
       showAppBar: false,
       backgroundColor: ColorConstants.pageBG,
-      leadingHeight: 180.0,
-      contentWidget: LoginInput(
-        emailController: emailController,
-        passwordController: passwordController,
-        formKey: formKey,
-        loginError: loginError,
+      // leadingHeight: 160.0,
+      contentWidget: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          LoginInput(
+            emailController: emailController,
+            passwordController: passwordController,
+            formKey: formKey,
+          ),
+        ],
       ),
       bottomButton: BasicButton(
         text: "first_use.login.sign_in".tr(),

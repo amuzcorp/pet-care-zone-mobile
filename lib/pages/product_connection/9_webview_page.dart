@@ -9,7 +9,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mqtt5_client/mqtt5_client.dart';
 import 'package:mqtt5_client/mqtt5_server_client.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/ai_health_camera_page.dart';
 import 'package:petcarezone/pages/product_connection/1-1_initial_device_home_page.dart';
 import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
@@ -23,6 +22,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
+import '../../constants/api_urls.dart';
 import '../../utils/logger.dart';
 import '../../utils/webview_state_manager.dart';
 import '../../widgets/indicator/indicator.dart';
@@ -78,27 +78,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     }
   }
 
-  // Future<void> initializePage() async {
-  //   await webViewInit();
-  //   setState(() {
-  //     webViewWidget = buildWebViewWidget();
-  //     isWebViewWidgetInitialized = true;
-  //   });
-  // }
   Future<void> initializePage() async {
-    setState(() {
-      webViewWidget = const Center(child: CircularProgressIndicator());
-      isWebViewWidgetInitialized = true;
-    });
-
-    // WebView와 MQTT 병렬 실행
-    await Future.wait([
-      webViewInit(),
-      mqttInit(),
-    ]);
-
+    await webViewInit();
     setState(() {
       webViewWidget = buildWebViewWidget();
+      isWebViewWidgetInitialized = true;
     });
   }
 
@@ -115,14 +99,13 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           },
         ),
       )
-      // ..loadRequest(Uri.parse(ApiUrls.webViewUrl))
+      ..loadRequest(Uri.parse(ApiUrls.webViewUrl))
       ..addJavaScriptChannel(
         'Flutter',
         onMessageReceived: (JavaScriptMessage message) async {
           await jsChannelListener(message);
         },
       );
-    await stateManager.controller!.loadRequest(widget.uri);
     final platformController = stateManager.controller!.platform;
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(

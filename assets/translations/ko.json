@@ -4,7 +4,7 @@
   "first_use": {
     "login": {
       "sign_in": "로그인",
-      "id": "ID",
+      "id": "아이디",
       "password": "비밀번호"
     },
     "register": {
