@@ -9,6 +9,7 @@ import 'package:flutter_native_image/flutter_native_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/icon_constants.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class AIHealthCameraPage extends StatefulWidget {
   const AIHealthCameraPage(
@@ -25,9 +26,16 @@ class AIHealthCameraPage extends StatefulWidget {
 }
 
 class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
-  Map titles = {"patella": "슬개골", "oral": "구강", "bmi": "비만도"};
+  Map titles = {
+    "patella": "ai_health_camera.patella".tr(),
+    "oral": "ai_health_camera.oral".tr(),
+    "bmi": "ai_health_camera.bmi".tr()
+  };
 
-  final List<String> mode = ["가이드", "기본"];
+  final List<String> mode = [
+    "ai_health_camera.guide".tr(),
+    "ai_health_camera.default".tr()
+  ];
   CameraController? controller;
   late List<CameraDescription> _cameras;
   String? base64String;
@@ -79,7 +87,8 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
         appBar: AppBar(
           toolbarHeight: 56.0,
           title: Text(
-            "${titles[widget.type]} AI 건강 체크",
+            "ai_health_camera.title"
+                .tr(namedArgs: {"type": titles[widget.type]}),
             style: const TextStyle(
                 fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
             textAlign: TextAlign.left,
@@ -217,9 +226,9 @@ class _AIHealthCameraPageState extends State<AIHealthCameraPage> {
                   const SizedBox(
                     height: 20,
                   ),
-                  const Text(
-                    "가이드에 맞춰 뒷모습을 촬영해주세요.",
-                    style: TextStyle(
+                  Text(
+                    "ai_health_camera.guideText".tr(),
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
