@@ -56,5 +56,14 @@
         }
       }
     }
+  },
+  "ai_health_camera": {
+    "patella": "Knee Joint",
+    "oral": "Oral Health",
+    "bmi": "Obesity",
+    "guide": "Guide",
+    "default": "Basics",
+    "title": "AI {type} Health Check",
+    "guideText": "Follow the guide to capture the back view."
   }
 }

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as img;
@@ -28,7 +28,12 @@ import '../../utils/webview_state_manager.dart';
 import '../../widgets/indicator/indicator.dart';
 
 class WebViewPage extends StatefulWidget {
-  WebViewPage({super.key, required this.uri, this.fcmUri, this.backPage, this.historyPeriod});
+  WebViewPage(
+      {super.key,
+      required this.uri,
+      this.fcmUri,
+      this.backPage,
+      this.historyPeriod});
 
   final Uri uri;
   final Widget? backPage;
@@ -40,7 +45,8 @@ class WebViewPage extends StatefulWidget {
 }
 
 class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
-  static const MethodChannel _channel = MethodChannel("com.lge.petcarezone/media");
+  static const MethodChannel _channel =
+      MethodChannel("com.lge.petcarezone/media");
   late final Widget webViewWidget;
   late final MqttServerClient client;
   final WebViewStateManager stateManager = WebViewStateManager();
@@ -110,7 +116,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (platformController is AndroidWebViewController) {
       platformController.setGeolocationPermissionsPromptCallbacks(
         onShowPrompt: (request) async {
-          final locationPermissionStatus = await Permission.locationWhenInUse.request();
+          final locationPermissionStatus =
+              await Permission.locationWhenInUse.request();
           return GeolocationPermissionsResponse(
             allow: locationPermissionStatus == PermissionStatus.granted,
             retain: false,
@@ -130,7 +137,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     );
 
     final claimCert = await rootBundle.load('assets/data/claim-cert.pem');
-    final claimPrivateKey = await rootBundle.load('assets/data/claim-private.key');
+    final claimPrivateKey =
+        await rootBundle.load('assets/data/claim-private.key');
     final rootCA = await rootBundle.load('assets/data/root-CA.crt');
 
     final context = SecurityContext(withTrustedRoots: false);
@@ -189,7 +197,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       client.subscribe(stateTopic, MqttQos.atLeastOnce);
       client.subscribe(eventTopic, MqttQos.atLeastOnce);
       client.updates.listen(onMessageReceived);
-      logD.i('Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
+      logD.i(
+          'Subscribing to topics: stateTopic $stateTopic, eventTopic $eventTopic');
     }
   }
 
@@ -204,7 +213,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
       stateManager.runJavaScript("handleStateTopicEvent($pt);");
     }
-    logD.i('EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
+    logD.i(
+        'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
   }
 
   Future getBleInfo() async {
@@ -214,7 +224,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Future userInfoInit() async {
     await getUserInfo();
     await setUserInfo();
-    logD.i('initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
+    logD.i(
+        'initial Loaded userIds: userId: $userId, petId: $petId, deviceId: $deviceId');
   }
 
   Future getUserInfo() async {
@@ -239,7 +250,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   /// 1. 초기 등록 & 펫 프로필 수정 시
   Future trackPetId() async {
-    final petIdFromLocalStorage = await stateManager.controller!.runJavaScriptReturningResult("""localStorage.getItem('petId');""");
+    final petIdFromLocalStorage = await stateManager.controller!
+        .runJavaScriptReturningResult("""localStorage.getItem('petId');""");
     String petIdStr = petIdFromLocalStorage.toString().replaceAll('"', '');
 
     /// 2. petId 있는 경우
@@ -282,7 +294,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         await folder.create(recursive: true);
       }
 
-      final filePath = '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
+      final filePath =
+          '${folder.path}/${DateTime.now().millisecondsSinceEpoch}.$format';
 
       final file = File(filePath);
       await file.writeAsBytes(byteData);
@@ -298,11 +311,24 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
   Future jsChannelListener(message) async {
     switch (message.message) {
+      case "setLanguage":
+        var lang = EasyLocalization.of(context)!.currentLocale!;
+        await stateManager.runJavaScript("window.setLanguage('${lang}')");
+        break;
+      case "setFlutterLanguage:ko":
+        Locale kor = const Locale('ko');
+        await context.setLocale(kor);
+        break;
+      case "setFlutterLanguage:en":
+        Locale eng = const Locale('en');
+        await context.setLocale(eng);
+        break;
       case "home":
         if (widget.fcmUri != null) {
           final fcmUri = widget.fcmUri.toString();
           print('fcmUri $fcmUri');
-          await stateManager.runJavaScript("navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
+          await stateManager.runJavaScript(
+              "navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
           widget.fcmUri = null;
           print('widget.fcmUri ${widget.fcmUri}');
         }
@@ -312,7 +338,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         isRegisterPage = true;
         break;
       case "setMobileStatusBarHeight":
-        await stateManager.runJavaScript("window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
+        await stateManager.runJavaScript(
+            "window.setMobileStatusBarHeight(${MediaQuery.of(context).padding.top})");
         break;
 
       case "changeNetwork":
@@ -336,7 +363,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           return Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                  builder: (context) => const InitialDeviceHomePage()), (route) => false);
+                  builder: (context) => const InitialDeviceHomePage()),
+              (route) => false);
         }
         break;
 
@@ -394,7 +422,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         }
         if (message.message.startsWith("aiCamGuideImage:")) {
           String base64String = message.message.split(':')[1];
-          aiPresetImg = base64String.isNotEmpty ? base64Decode(base64String) : null;
+          aiPresetImg =
+              base64String.isNotEmpty ? base64Decode(base64String) : null;
         }
         if (message.message.startsWith("openAICamAtFlutter:")) {
           String type = message.message.split(':')[1];
@@ -419,7 +448,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     Future.delayed(
         const Duration(milliseconds: 150),
         () => {
-              stateManager.runJavaScript('window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
+              stateManager.runJavaScript(
+                  'window.uploadAIPhotoAtFlutter("data:image/jpeg;base64,$base64String")')
             });
   }
 
@@ -434,7 +464,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         img.Image resizedImage = img.copyResize(originalImage, width: 500);
         List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
         String? base64String = base64Encode(compressedBytes);
-        stateManager.runJavaScript('window.changeFile("data:image/jpeg;base64,$base64String")');
+        stateManager.runJavaScript(
+            'window.changeFile("data:image/jpeg;base64,$base64String")');
       }
     }
   }
@@ -473,14 +504,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return true;
     }
     String path = splittedUrl.last;
-    if (path == 'home' || path == 'register' || path == 'timeline' || path == 'ai-health') {
+    if (path == 'home' ||
+        path == 'register' ||
+        path == 'timeline' ||
+        path == 'ai-health') {
       logD.i("Flutter 경로에서 뒤로가기 처리.");
       if (mounted) {
         if (widget.backPage != null) {
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => widget.backPage!),
-                (route) => false,
+            (route) => false,
           );
         } else {
           Navigator.pop(context);
@@ -494,8 +528,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       } else {
         print('currentUrlcurrentUrl $currentUrl');
         logD.i("JavaScript로 일반 뒤로가기 처리.");
-        stateManager.runJavaScript("if (window.location.pathname !== '/') { window.history.back(); }"
-        );
+        stateManager.runJavaScript(
+            "if (window.location.pathname !== '/') { window.history.back(); }");
       }
       return false;
     }

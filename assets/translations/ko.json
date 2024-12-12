@@ -56,5 +56,15 @@
         }
       }
     }
+  },
+  "ai_health_camera": {
+    "patella": "슬개골",
+    "oral": "구강",
+    "bmi": "비만도",
+    "guide": "가이드",
+    "default": "기본",
+    "title": "{type} AI 건강 체크",
+    "guideText": "가이드에 맞춰 뒷모습을 촬영해주세요."
   }
+
 }
