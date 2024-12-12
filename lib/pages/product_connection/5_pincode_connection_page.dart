@@ -83,7 +83,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   }
 
   messageHandler(String message) {
-    return messageService.messageController.add(message);
+    return messageService.addMessage(message);
   }
 
   // void startCountdown() {

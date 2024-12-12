@@ -33,7 +33,7 @@ class DeviceService {
       await saveDeviceInfo(deviceModel);
       connectSdkService.matchedDeviceController.close();
     } else {
-      messageService.messageController.add("기기 연결에 실패했어요. 뒤로 이동해\nWi-Fi 연결을 다시 시도해 주세요.");
+      messageService.addMessage("기기 연결에 실패했어요. 뒤로 이동해\nWi-Fi 연결을 다시 시도해 주세요.");
     }
   }
 

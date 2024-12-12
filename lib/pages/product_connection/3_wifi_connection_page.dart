@@ -49,12 +49,12 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   String selectedSecurityType = "";
   String password = "";
   bool isLoading = false;
-  bool _isDropdownOpen = false;
+  bool isDropdownOpen = false;
   bool isFromWebView = false;
 
-  OverlayEntry? _overlayEntry;
+  OverlayEntry? overlayEntry;
 
-  OverlayEntry _createDropdown(List<Map<String, String>> wifiInfos) {
+  OverlayEntry createDropdown(List<Map<String, String>> wifiInfos) {
     return OverlayEntry(
       builder: (context) {
         return Positioned(
@@ -161,10 +161,10 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
               link: _layerLink,
               child: GestureDetector(
                 onTap: wifiInfos.isNotEmpty? () {
-                  if (_isDropdownOpen) {
+                  if (isDropdownOpen) {
                     _closeDropdown();
                   } else {
-                    _openDropdown(wifiInfos);
+                    openDropdown(wifiInfos);
                   }
                 }
                 : null,
@@ -180,7 +180,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
                     children: [
                       Text(selectedWifi.isEmpty ? 'Wi-Fi Scanning...' : selectedWifi),
                       Icon(
-                        _isDropdownOpen ? Icons.arrow_back_ios : Icons.arrow_forward_ios,
+                        isDropdownOpen ? Icons.arrow_back_ios : Icons.arrow_forward_ios,
                         size: 15,
                         color: ColorConstants.inputLabelColor,
                       ),
@@ -227,22 +227,22 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     );
   }
 
-  void _openDropdown(List<Map<String, String>> wifiInfos) {
-    if (!_isDropdownOpen) {
-      _overlayEntry = _createDropdown(wifiInfos);
-      Overlay.of(context)?.insert(_overlayEntry!);
+  void openDropdown(List<Map<String, String>> wifiInfos) {
+    if (!isDropdownOpen) {
+      overlayEntry = createDropdown(wifiInfos);
+      Overlay.of(context)?.insert(overlayEntry!);
       setState(() {
-        _isDropdownOpen = true;
+        isDropdownOpen = true;
       });
     }
   }
 
   void _closeDropdown() {
-    if (_overlayEntry != null) {
-      _overlayEntry?.remove();
-      _overlayEntry = null;
+    if (overlayEntry != null) {
+      overlayEntry?.remove();
+      overlayEntry = null;
       setState(() {
-        _isDropdownOpen = false;
+        isDropdownOpen = false;
       });
     }
   }

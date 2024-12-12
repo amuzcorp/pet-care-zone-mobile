@@ -58,7 +58,7 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
         );
       }
     } catch (e) {
-      messageService.messageController.add("Bluetooth 연결을 다시 진행 후 메뉴를 눌러주세요.");
+      messageService.addMessage("Bluetooth 연결을 다시 진행 후 메뉴를 눌러주세요.");
       logD.e('Error during saveDevicesAndNavigate: $e');
       rethrow;
     } finally {

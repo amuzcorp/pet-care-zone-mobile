@@ -35,7 +35,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       if (deviceInfo != null) {
         await connectSdkService.requestParingKey(deviceInfo);
       } else {
-        messageService.messageController.add("webOS 연결이 필요해요.\n뒤로 이동해서 다시 Wi-Fi를 연결해 주세요.");
+        messageService.addMessage("Wi-Fi 연결을 실패했어요.\n뒤로 이동해서 다시 Wi-Fi를 연결해 주세요.");
         logD.e('No device information available');
       }
     } catch (e) {

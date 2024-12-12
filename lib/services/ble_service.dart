@@ -50,7 +50,7 @@ class BleService {
       }
     } else {
       logD.e('기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.');
-      messageService.messageController.add("*기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.");
+      messageService.addMessage("*기기 연결이 되지 않았어요.\n뒤로 돌아가 메뉴를 한번 더 눌러주세요.");
     }
   }
 
@@ -86,10 +86,10 @@ class BleService {
         String dataToSend = '$ssid\u0000\u0000$password\u0000\u0000$securityType\u0000\u0000$isHidden';
         await writeCharacteristic(dataToSend);
       } catch (e) {
-        messageService.messageController.add('* 기기와 통신 오류 발생');
+        messageService.addMessage('* 기기와 통신 오류 발생');
       }
     } else {
-      messageService.messageController.add('* 지원 불가 BLE입니다.');
+      messageService.addMessage('* 지원 불가 BLE입니다.');
     }
   }
 
