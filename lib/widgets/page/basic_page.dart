@@ -71,10 +71,9 @@ class BasicPage extends StatelessWidget {
         ),
         if (devMode)
           StreamBuilder<String>(
-            stream: connectSdkService.logStream, // Still subscribe to logStream for new updates
+            stream: connectSdkService.logStream,
             builder: (context, logSnapshot) {
               if (logSnapshot.hasData) {
-                // Only add the log if it's not already in collectedLogs
                 if (!connectSdkService.collectedLogs.contains(logSnapshot.data)) {
                   connectSdkService.collectedLogs.add(logSnapshot.data!);
                 }
@@ -82,9 +81,9 @@ class BasicPage extends StatelessWidget {
 
               return Expanded(
                 child: ListView.builder(
-                  itemCount: connectSdkService.collectedLogs.length, // Use the full collectedLogs list
+                  itemCount: connectSdkService.collectedLogs.length,
                   itemBuilder: (context, index) {
-                    return SelectableText('${connectSdkService.collectedLogs[index]}\n'); // Display the full log history
+                    return SelectableText('${connectSdkService.collectedLogs[index]}\n');
                   },
                 ),
               );
@@ -96,12 +95,12 @@ class BasicPage extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        tapCount++; // 탭 카운트 증가
+        tapCount++;
         if (tapCount >= 7) {
           tapCount = 0;
           devMode = !devMode;
 
-          final message = devMode ? 'Dev Mode Activated!' : 'Dev Mode Deactivated!'; // 메시지 선택
+          final message = devMode ? 'Dev Mode Activated!' : 'Dev Mode Deactivated!';
           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
         }
 
