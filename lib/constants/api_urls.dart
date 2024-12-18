@@ -9,7 +9,8 @@ class ApiUrls {
 
   /// WebView Urls
   // static const String webViewUrl = 'https://amuzcorp-pet-care-zone-webview.vercel.app';
-  static const String webViewUrl = 'http://192.168.200.75:5173';
+  // static const String webViewUrl = 'http://192.168.200.75:5173';
+  static const String webViewUrl = 'https://petcarezone.amuz.kr/';
 
   /// timeline Url
   static const String timelineUrl = '/timeline';

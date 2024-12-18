@@ -6,6 +6,7 @@ import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/firebase_service.dart';
+import 'package:petcarezone/utils/locale_manager.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/cards/initial_device_register_card.dart';
 import 'package:petcarezone/widgets/dialog/permission_dialog.dart';
@@ -35,8 +36,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final DeviceService deviceService = DeviceService();
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
-  Locale eng = const Locale('en');
-  Locale kor = const Locale('ko');
   String deviceName = "";
   String? fcmToken = "";
   bool isRegistered = false;
@@ -86,15 +85,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     firebaseService.refreshFcmToken();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    userInfoLoad();
-  }
-
-  @override
-  void initState() {
-    super.initState();
+  void initialize() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final prefs = await SharedPreferences.getInstance();
       final isPermitted = prefs.getBool('isPermitted') ?? false;
@@ -104,6 +95,18 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     });
     connectSdkService.setupLogListener();
     connectSdkService.startLogSubscription((data) {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    userInfoLoad();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    initialize();
   }
 
   @override
@@ -120,54 +123,75 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
         ImageConstants.productConnectionGuide1,
         fit: BoxFit.cover,
       ),
-      contentWidget: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              InkWell(
-                onTap: () async {
-                  setState(() {
-                    isTapOn = !isTapOn;
-                  });
-                  if (context.locale == kor) {
-                    await context.setLocale(eng);
-                  } else {
-                    await context.setLocale(kor);
-                  }
+      contentWidget: _contentWidget()
+    );
+  }
 
-                },
-                child: Text(
-                  'first_use.register.home.title'.tr(),
-                  style: TextStyle(
-                    fontSize: FontConstants.descriptionTextSize,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          boxH(30),
-          InitialDeviceRegisterCard(
-            iconUrl: IconConstants.deviceNameEditIcon,
-            iconColor: ColorConstants.blackIcon,
-            text: deviceName,
-            bgColor: ColorConstants.white,
-            destinationPage: destinationPage,
-            isRegistered: isRegistered,
-          ),
-          boxH(10),
-          if (isTapOn) Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SelectableText(
-                'fcmToken: $fcmToken',
-              )
-            ],
-          )
-        ],
+  Widget _contentWidget() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _homeTitle()
+          ],
+        ),
+        boxH(30),
+        _deviceRegisterCard(),
+        boxH(10),
+        if (isTapOn) _fcmToken()
+      ],
+    );
+  }
+
+  Widget _homeTitle() {
+    return InkWell(
+      onTap: () async {
+        setState(() {
+          isTapOn = !isTapOn;
+        });
+        final locale = await LocaleManager.instance.getLocale();
+        if (locale.toString() == 'ko') {
+          if (mounted) {
+            await LocaleManager.instance.setLocale(context, 'en');
+          }
+        } else {
+          if (mounted) {
+            await LocaleManager.instance.setLocale(context, 'ko');
+          }
+        }
+
+      },
+      child: Text(
+        'first_use.register.home.title'.tr(),
+        style: TextStyle(
+          fontSize: FontConstants.descriptionTextSize,
+          fontWeight: FontWeight.bold,
+        ),
       ),
+    );
+  }
+
+  Widget _deviceRegisterCard() {
+    return InitialDeviceRegisterCard(
+      iconUrl: IconConstants.deviceNameEditIcon,
+      iconColor: ColorConstants.blackIcon,
+      text: deviceName,
+      bgColor: ColorConstants.white,
+      destinationPage: destinationPage,
+      isRegistered: isRegistered,
+    );
+  }
+
+  Widget _fcmToken() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SelectableText(
+          'fcmToken: $fcmToken',
+        )
+      ],
     );
   }
 }

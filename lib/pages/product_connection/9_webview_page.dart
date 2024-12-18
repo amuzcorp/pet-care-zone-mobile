@@ -23,6 +23,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 
 import '../../constants/api_urls.dart';
+import '../../utils/locale_manager.dart';
 import '../../utils/logger.dart';
 import '../../utils/webview_state_manager.dart';
 import '../../widgets/indicator/indicator.dart';
@@ -312,16 +313,14 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   Future jsChannelListener(message) async {
     switch (message.message) {
       case "setLanguage":
-        var lang = EasyLocalization.of(context)!.currentLocale!;
-        await stateManager.runJavaScript("window.setLanguage('${lang}')");
+        final Locale lang = EasyLocalization.of(context)!.currentLocale!;
+        await stateManager.runJavaScript("window.setLanguage('$lang')");
         break;
       case "setFlutterLanguage:ko":
-        Locale kor = const Locale('ko');
-        await context.setLocale(kor);
+        await LocaleManager.instance.setLocale(context, 'ko');
         break;
       case "setFlutterLanguage:en":
-        Locale eng = const Locale('en');
-        await context.setLocale(eng);
+        await LocaleManager.instance.setLocale(context, 'en');
         break;
       case "home":
         if (widget.fcmUri != null) {
