@@ -409,6 +409,11 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       case "openCamera":
         _getImage(ImageSource.camera);
         break;
+      case "openAnimalSite":
+        launchUrl(
+          Uri.parse('https://www.animal.go.kr'),
+        );
+        break;
 
       default:
         if (message.message.startsWith('data:image/png')) {
