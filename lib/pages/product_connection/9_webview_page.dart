@@ -509,36 +509,32 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       return true;
     }
     String path = splittedUrl.last;
-    if (path == 'home' ||
-        path == 'register' ||
-        path == 'timeline' ||
-        path == 'ai-health') {
-      logD.i("Flutter 경로에서 뒤로가기 처리.");
-      if (mounted) {
-        if (widget.backPage != null) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => widget.backPage!),
-            (route) => false,
-          );
-        } else {
-          Navigator.pop(context);
+    switch (path) {
+      case "home":
+        stateManager.runJavaScript("window.openBackModal();");
+        return false;
+      case "register":
+        if (mounted) {
+          backPageNavigator();
+          return false;
         }
         return false;
-      }
-    } else {
-      if (splittedUrl.contains("ai-health") && splittedUrl.contains("result")) {
-        logD.i("AI Health 결과 페이지 뒤로가기.");
-        stateManager.runJavaScript("window.moveBackByStep(-3);");
-      } else {
-        print('currentUrlcurrentUrl $currentUrl');
-        logD.i("JavaScript로 일반 뒤로가기 처리.");
-        stateManager.runJavaScript(
-            "if (window.location.pathname !== '/') { window.history.back(); }");
-      }
-      return false;
+      case "timeline":
+      case "ai-health":
+        stateManager.runJavaScript("window.moveHome();");
+        return false;
+      default:
+        if (splittedUrl.contains("ai-health") &&
+            splittedUrl.contains("result")) {
+          logD.i("AI Health 결과 페이지 뒤로가기.");
+          stateManager.runJavaScript("window.moveBackByStep(-3);");
+        } else {
+          logD.i("JavaScript로 일반 뒤로가기 처리.");
+          stateManager.runJavaScript(
+              "if (window.location.pathname !== '/') { window.history.back(); }");
+        }
+        return false;
     }
-    return true;
   }
 
   void backPageNavigator() async {
