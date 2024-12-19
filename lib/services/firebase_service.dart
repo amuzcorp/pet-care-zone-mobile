@@ -10,7 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 import '../utils/logger.dart';
-import '../widgets/app_life_cycle_state_checker.dart';
+import '../utils/app_life_cycle_state_checker.dart';
 
 class FirebaseService {
   final UserService userService = UserService();
