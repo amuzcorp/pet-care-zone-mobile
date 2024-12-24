@@ -79,8 +79,8 @@ class _InitialDeviceRegisterCardState extends State<InitialDeviceRegisterCard> {
                         ColorConstants.teal,
                         BlendMode.srcATop,
                       )),
-                  boxH(10),
-                  Text("first_use.register.card".tr()),
+                  boxH(15),
+                  Text("first_use.register.home.card".tr()),
                 ],
               ) :
               Column(

@@ -6,6 +6,7 @@ import 'package:petcarezone/pages/product_connection/5_pincode_connection_page.d
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/luna_service.dart';
 import 'package:petcarezone/services/message_service.dart';
+import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
@@ -58,6 +59,7 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
+          boxH(10),
           StreamBuilder<String>(
             stream: messageService.messageController.stream,
             builder: (context, snapshot) {

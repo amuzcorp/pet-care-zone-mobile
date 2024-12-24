@@ -76,7 +76,8 @@ class ConnectSdkService {
   }
 
   void startLogSubscription(void Function(String data) onData) {
-    logSubscription ??= logStream.listen((data) async {
+    logSubscription?.cancel();
+    logSubscription = logStream.distinct().listen((data) async {
       collectedLogs.add(data);
       onData(data);
     });
@@ -97,6 +98,10 @@ class ConnectSdkService {
   }
 
   Future<void> startScan() async {
+    if (scanTimer != null && scanTimer!.isActive) {
+      logD.w("Scan timer is already running");
+      return;
+    }
     scanTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
       try {
         logD.i("Scanning...");

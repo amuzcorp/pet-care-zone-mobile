@@ -29,7 +29,6 @@ class _DeviceListPageState extends State<DeviceListPage> {
   @override
   void dispose() {
     isLoading.dispose();
-    messageService.messageController.close();
     super.dispose();
   }
   @override

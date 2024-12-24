@@ -23,6 +23,13 @@
       "connect_to_wifi": {
         "title": "Select the Wi-Fi network for Pet Care Zone from the screen below.",
         "wifi_network": "Wi-Fi Network",
+        "wifi_password": "*Please enter your Wi-Fi password.",
+        "wifi_different": "The Wi-Fi to connect is different.\nCurrent Wi-Fi: {currentWifi}",
+        "wifi_disconnect": "Disconnected from device. Please connect\nthe device by going back and pressing the menu again",
+        "bluetooth_check": "*Please check the Bluetooth connection.",
+        "bluetooth_disconnect": "The Bluetooth connection is disconnected.\nPlease turn on the Bluetooth of the product first.",
+        "bluetooth_error": "*An error occurred during Bluetooth initialization: {error}",
+        "error": "*An error has occurred. {error}",
         "password": "Password",
         "connect": "Connect"
       },
