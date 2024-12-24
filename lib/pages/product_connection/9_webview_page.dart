@@ -466,7 +466,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
       img.Image? originalImage = img.decodeImage(bytes);
       if (originalImage != null) {
         // img.Image resizedImage = img.copyResize(originalImage, width: 500);
-        List<int> compressedBytes = img.encodeJpg(originalImage, quality: 70);
+        List<int> compressedBytes = img.encodeJpg(originalImage, quality: 60);
         String? base64String = base64Encode(compressedBytes);
         stateManager.runJavaScript(
             'window.changeFile("data:image/jpeg;base64,$base64String")');
