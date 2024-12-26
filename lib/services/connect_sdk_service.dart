@@ -76,8 +76,7 @@ class ConnectSdkService {
   }
 
   void startLogSubscription(void Function(String data) onData) {
-    logSubscription?.cancel();
-    logSubscription = logStream.distinct().listen((data) async {
+    logSubscription ??= logStream.distinct().listen((data) async {
       collectedLogs.add(data);
       onData(data);
     });

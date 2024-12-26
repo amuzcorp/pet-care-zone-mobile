@@ -95,9 +95,6 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     });
     if (connectSdkService.logSubscription == null) {
       connectSdkService.setupLogListener();
-      connectSdkService.startLogSubscription((data) {
-        logD.i('Log data received: $data');
-      });
     }
   }
 

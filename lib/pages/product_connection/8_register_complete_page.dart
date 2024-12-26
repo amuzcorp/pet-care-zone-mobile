@@ -12,6 +12,7 @@ import 'package:petcarezone/widgets/cards/device_register_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants/api_urls.dart';
 import '../../services/connect_sdk_service.dart';
+import '../../widgets/indicator/indicator.dart';
 import '../../widgets/page/basic_page.dart';
 import '9_webview_page.dart';
 
@@ -26,6 +27,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
   final LunaService lunaService = LunaService();
+  bool isLoading = false;
   String deviceId = '';
   String deviceName = 'first_use.register.connect_to_device.register.product_name.tr'.tr();
   String modelNumber = '';
@@ -40,14 +42,21 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
 
   Future registerDeviceInfo() async {
     if (deviceId.isNotEmpty && deviceName.isNotEmpty && modelNumber.isNotEmpty) {
+      setState(() {
+        isLoading = true;
+      });
       final deviceInfo = DeviceModel(deviceId: deviceId, serialNumber: modelNumber, deviceName: deviceName);
       await deviceService.registerDevice(
         deviceId,
         deviceName,
         modelNumber,
       );
+      await Future.delayed(const Duration(seconds: 4));
       await deviceService.provisionDevice(deviceId!);
       await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
+      setState(() {
+        isLoading = false;
+      });
     } else {
       guideMessage = '제품 정보를 먼저 등록해 주세요.';
     }
@@ -95,6 +104,8 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
               color: ColorConstants.inputLabelColor,
             ),
           ),
+          boxH(10),
+          isLoading ? const GradientCircularLoader() : Container(),
         ],
       ),
       bottomButton: Column(

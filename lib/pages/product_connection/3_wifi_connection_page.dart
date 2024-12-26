@@ -136,7 +136,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       stream: messageService.messageController.stream,
       builder: (context, snapshot) {
         String errorText = snapshot.data ?? "";
-        print('errorText $errorText');
         return Text(errorText, style: TextStyle(color: ColorConstants.red),);
       },
     );

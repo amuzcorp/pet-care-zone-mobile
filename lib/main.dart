@@ -82,7 +82,7 @@ class PetCareZoneState extends State<PetCareZone> {
         final route = routesWeb.firstWhere((route) => route.path == settings.name);
         final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
           orElse: () {
-            logD.e("History period not found for: ${settings.name}");
+            logD.e("Not History uri: ${settings.name}");
             return '';
           },
         );

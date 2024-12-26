@@ -1,5 +1,6 @@
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:petcarezone/widgets/box/box.dart';
 import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/services/user_service.dart';
 import '../../constants/color_constants.dart';
@@ -43,7 +44,6 @@ class _LoginPageState extends State<LoginPage> {
     return BasicPage(
       showAppBar: false,
       backgroundColor: ColorConstants.pageBG,
-      // leadingHeight: 160.0,
       contentWidget: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -52,6 +52,7 @@ class _LoginPageState extends State<LoginPage> {
             passwordController: passwordController,
             formKey: formKey,
           ),
+          boxH(80),
         ],
       ),
       bottomButton: BasicButton(

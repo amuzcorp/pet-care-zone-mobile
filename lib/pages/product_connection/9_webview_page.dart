@@ -571,7 +571,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    stateManager.setWebViewActive(true);
+    stateManager.isWebViewActive = true;
     stateManager.setController(WebViewController());
     WidgetsBinding.instance.addObserver(this);
     initializePage();
@@ -581,8 +581,8 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   void dispose() {
     isDisposed = true;
     client.disconnect();
+    stateManager.isWebViewActive = false;
     WidgetsBinding.instance.removeObserver(this);
-    stateManager.setWebViewActive(false);
     super.dispose();
   }
 
