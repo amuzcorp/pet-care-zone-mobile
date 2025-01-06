@@ -13,10 +13,6 @@ class WebViewStateManager {
     controller = webViewController;
   }
 
-  void setWebViewActive(bool isActive) {
-    isWebViewActive = isActive;
-  }
-
   Future<void> runJavaScript(String script) async {
     if (controller != null) {
       await controller!.runJavaScript(script);

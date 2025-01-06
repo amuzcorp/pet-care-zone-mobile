@@ -93,8 +93,9 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
         await permissionCheckDialog.showPermissionAlertDialog(context);
       }
     });
-    connectSdkService.setupLogListener();
-    connectSdkService.startLogSubscription((data) {});
+    if (connectSdkService.logSubscription == null) {
+      connectSdkService.setupLogListener();
+    }
   }
 
   @override

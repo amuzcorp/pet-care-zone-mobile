@@ -24,7 +24,7 @@ class _PowerCheckPageState extends State<PowerCheckPage> {
     return BasicPage(
       showAppBar: true,
       topHeight: 70,
-      description: 'first_use.register.power_guide.power_cord.connect'.tr(),
+      description: 'first_use.register.power_guide.power_cord_connect'.tr(),
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide2)

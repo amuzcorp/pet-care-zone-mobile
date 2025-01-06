@@ -7,7 +7,7 @@ class FontConstants {
   static TextStyle fontFamily = const TextStyle(fontFamily: "LG");
 
   static double titleTextSize = 14.0;
-  static double descriptionTextSize = 21.0;
+  static double descriptionTextSize = 22.0;
   static double buttonTextSize = 16.0;
   static double cardTextSize = 15.0;
 

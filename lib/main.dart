@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/api_urls.dart';
 import 'package:petcarezone/pages/product_connection/9_webview_page.dart';
@@ -12,13 +13,14 @@ import 'package:petcarezone/utils/locale_manager.dart';
 import 'package:petcarezone/utils/logger.dart';
 import 'package:petcarezone/utils/routes_web.dart';
 import 'package:petcarezone/utils/webview_state_manager.dart';
-import 'package:petcarezone/widgets/app_life_cycle_state_checker.dart';
+import 'package:petcarezone/utils/app_life_cycle_state_checker.dart';
 
 import 'firebase_options.dart';
 
 void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await EasyLocalization.ensureInitialized();
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -66,7 +68,6 @@ class PetCareZoneState extends State<PetCareZone> {
 
   @override
   Widget build(BuildContext context) {
-    logD.e('stateManager.isWebViewActive  ${stateManager.isWebViewActive }');
     return MaterialApp(
       localizationsDelegates: context.localizationDelegates,
       supportedLocales: context.supportedLocales,
@@ -81,7 +82,7 @@ class PetCareZoneState extends State<PetCareZone> {
         final route = routesWeb.firstWhere((route) => route.path == settings.name);
         final history = historyPeriods.firstWhere((history) => settings.name!.contains(history),
           orElse: () {
-            logD.e("History period not found for: ${settings.name}");
+            logD.e("Not History uri: ${settings.name}");
             return '';
           },
         );

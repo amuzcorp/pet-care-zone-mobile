@@ -141,14 +141,6 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
               return const Expanded(child: GradientCircularLoader());
             },
           ),
-          boxH(10),
-          StreamBuilder<String>(
-            stream: messageService.messageController.stream,
-            builder: (context, snapshot) {
-              String errorText = snapshot.data ?? "";
-              return Text(errorText, style: TextStyle(color: ColorConstants.red),);
-            },
-          ),
         ],
       )
     );

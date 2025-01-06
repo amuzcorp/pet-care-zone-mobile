@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,7 +12,6 @@ import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 import 'package:petcarezone/widgets/page/basic_page.dart';
 
-import '../../constants/color_constants.dart';
 import '../../services/connect_sdk_service.dart';
 import '../../utils/logger.dart';
 
@@ -58,13 +59,6 @@ class _PincodeCheckPageState extends State<PincodeCheckPage> {
       contentWidget: Column(
         children: [
           guideImageWidget(imagePath: ImageConstants.productConnectionGuide4),
-          StreamBuilder<String>(
-            stream: messageService.messageController.stream,
-            builder: (context, snapshot) {
-              String errorText = snapshot.data ?? "";
-              return Text(errorText, style: TextStyle(color: ColorConstants.red),);
-            },
-          ),
         ],
       ),
       bottomButton: BasicButton(

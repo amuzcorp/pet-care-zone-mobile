@@ -133,7 +133,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   Widget errorStreamBuilder() {
     return StreamBuilder<String>(
-      stream: messageController.stream,
+      stream: messageService.messageController.stream,
       builder: (context, snapshot) {
         String errorText = snapshot.data ?? "";
         return Text(errorText, style: TextStyle(color: ColorConstants.red),);
@@ -262,7 +262,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await bleService.getCharacteristics();
     } catch (e) {
       logD.e("Error during BLE initialization: $e");
-      messageController.add('*BLE 초기화 중 오류 발생: $e');
+      messageService.messageController.add('first_use.register.connect_to_wifi.bluetooth_error'.tr(namedArgs: {'error': e.toString()}));
       await bleService.bleConnectToDeviceFromWebView();
     }
   }
@@ -272,7 +272,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     if (!checkPassword()) return;
     if (bleService.connectedDevice == null) {
       logD.e('connectedDevice is null');
-      messageController.add('* BLE 연결을 확인해주세요.');
+      messageService.messageController.add('first_use.register.connect_to_wifi.bluetooth_check'.tr());
       return;
     }
     setState(() {
@@ -305,6 +305,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await completer.future;
     } catch (e) {
       errorListener(e);
+    } finally {
       setState(() {
         isLoading = false;
       });
@@ -314,10 +315,10 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   Future<bool> checkWifiConnection() async {
     String currentWifi = await wifiService.getCurrentSSID();
     if (currentWifi != selectedWifi) {
-      messageController.add('*연결할 Wi-Fi가 다릅니다.\n현재 Wi-Fi: $currentWifi');
+      messageService.messageController.add('first_use.register.connect_to_wifi.wifi_different'.tr(namedArgs: {'currentWifi' : currentWifi}));
       return false;
     } else {
-      messageController.add('');
+      messageService.messageController.add('');
     }
     return true;
   }
@@ -325,11 +326,11 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   void errorListener(error) {
     String bleErrorText = e.toString().toLowerCase();
     if (bleErrorText.contains('disconnect')) {
-      messageController.add('기기와 연결이 끊어졌어요.\n뒤로 가서 다시 메뉴를 눌러 기기를 연결해 주세요.');
+      messageService.messageController.add('first_use.register.connect_to_wifi.wifi_disconnect'.tr());
     } else if (bleErrorText.contains('fbp-code: 6')) {
-      messageController.add('블루투스 연결이 끊어졌어요. 제품의 블루투스를 먼저 켜주세요.');
+      messageService.messageController.add('first_use.register.connect_to_wifi.bluetooth_disconnect'.tr());
     } else {
-      messageController.add('에러가 발생했어요. $error');
+      messageService.messageController.add('first_use.register.connect_to_wifi.error'.tr(namedArgs: {'error' : error}));
       connectToWifiAndDevice();
     }
     print('bleErrorText $error');
@@ -337,7 +338,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
 
   bool checkPassword() {
     if (password.isEmpty) {
-      messageController.add('*Wi-Fi 비밀번호를 입력해주세요.');
+      messageService.messageController.add('first_use.register.connect_to_wifi.wifi_password'.tr());
       return false;
     }
     return true;
@@ -354,7 +355,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     super.initState();
     isFromWebView = widget.isFromWebView;
     wifiService.initialize();
-    messageController = messageService.messageController;
     passwordController.clear();
   }
 
@@ -364,7 +364,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     connectSdkService.stopScan();
     wifiService.dispose();
     passwordController.dispose();
-    messageController.close();
     super.dispose();
   }
 

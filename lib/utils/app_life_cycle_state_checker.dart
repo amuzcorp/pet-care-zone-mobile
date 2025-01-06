@@ -11,13 +11,13 @@ final FirebaseService firebaseService = FirebaseService();
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   logD.i("Background Notification Received! $message");
-  String payloadData = jsonEncode(message?.data);
-  await firebaseService.showSimpleNotification(
-    title: message.notification?.title,
-    body: message.notification?.body,
-    imageUrl: message.notification?.android?.imageUrl,
-    payload: payloadData,
-  );
+  if (message.notification != null) {
+    //No need for showing Notification manually.
+    //For BackgroundMessages: Firebase automatically sends a Notification.
+    //If you call the flutterLocalNotificationsPlugin.show()-Methode for
+    //example the Notification will be displayed twice.
+  }
+  return;
 }
 
 class AppLifecycleStateChecker with WidgetsBindingObserver {
@@ -28,22 +28,13 @@ class AppLifecycleStateChecker with WidgetsBindingObserver {
 
   final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-  StreamSubscription<RemoteMessage>? firebaseSubscription;
-
   void initializeFirebaseListeners() {
     startFirebaseSubscription();
     setupInteractedMessage();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.detached) {
-      FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-    }
-  }
-
   void startFirebaseSubscription() {
-    firebaseSubscription ??= FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
         logD.i('Got a message in foreground\n'
             'body:${message.notification?.body}\n'
             'payload:${jsonEncode(message.data)}\n'
@@ -62,9 +53,6 @@ class AppLifecycleStateChecker with WidgetsBindingObserver {
     //앱이 종료된 상태에서 열릴 때 getInitialMessage 호출
     RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
     logD.w('initialMessage $initialMessage');
-    if (initialMessage != null) {
-      handleMessage(initialMessage);
-    }
     FirebaseMessaging.onMessageOpenedApp.listen(handleMessage);
   }
 
@@ -72,5 +60,11 @@ class AppLifecycleStateChecker with WidgetsBindingObserver {
     final deepLink = message.data['deep_link'];
     print('handleMessagedeepLink $deepLink');
     navigatorKey.currentState?.pushNamed('/$deepLink');
+    await firebaseService.showSimpleNotification(
+      title: message.notification?.title,
+      body: message.notification?.body,
+      imageUrl: message.notification?.android?.imageUrl,
+      payload: jsonEncode(message?.data),
+    );
   }
 }
