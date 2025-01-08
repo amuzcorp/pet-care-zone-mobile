@@ -18,7 +18,7 @@
       },
       "connect_to_ble": {
         "title": "연결 가능한 제품",
-        "nearby_product": "주변 제품"
+        "nearby_products": "주변 제품"
       },
       "connect_to_wifi": {
         "title": "Pet Care Zone에 연결할 Wi-Fi\n네트워크를 아래 화면에서 선택해주세요.",

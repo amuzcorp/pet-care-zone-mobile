@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/1-2_power_check_page.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
-import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/firebase_service.dart';
 import 'package:petcarezone/utils/locale_manager.dart';
 import 'package:petcarezone/widgets/box/box.dart';
@@ -33,16 +32,14 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
   final PermissionCheckDialog permissionCheckDialog = PermissionCheckDialog();
   final UserService userService = UserService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
-  final DeviceService deviceService = DeviceService();
   final FirebaseService firebaseService = FirebaseService();
   Widget destinationPage = const PowerCheckPage();
   String deviceName = "";
   String? fcmToken = "";
   bool isRegistered = false;
-  bool isDeviceReady = false;
   bool isTapOn = false;
 
-  Future getFcmInfo() async {
+  Future<void> getFcmInfo() async {
     await FirebaseMessaging.instance.getToken().then((token) {
       if (token != null) {
         fcmToken = token;
@@ -79,7 +76,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
     }
   }
 
-  Future userInfoLoad() async {
+  Future<void> userInfoLoad() async {
     await getFcmInfo();
     validateUserInfo();
     firebaseService.refreshFcmToken();

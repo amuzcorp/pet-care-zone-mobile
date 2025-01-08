@@ -5,7 +5,6 @@ import 'package:petcarezone/widgets/buttons/basic_button.dart';
 import 'package:petcarezone/widgets/images/image_widget.dart';
 
 import '../../constants/image_constants.dart';
-import '../../services/user_service.dart';
 import '../../widgets/page/basic_page.dart';
 
 class PowerCheckPage extends StatefulWidget {
@@ -16,7 +15,6 @@ class PowerCheckPage extends StatefulWidget {
 }
 
 class _PowerCheckPageState extends State<PowerCheckPage> {
-  final UserService userService = UserService();
   Widget destinationPage = const DeviceListPage(isFromWebView: false);
 
   @override
