@@ -153,6 +153,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 setState(() {
                   selectedWifi = wifiInfos[0]['SSID'] ?? "";
+                  logD.i('Initial selected Wi-Fi: $selectedWifi');
                 });
               });
             }
@@ -268,7 +269,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   }
 
   Future<void> connectToWifiAndDevice() async {
-    if (!await checkWifiConnection()) return;
     if (!checkPassword()) return;
     if (bleService.connectedDevice == null) {
       logD.e('connectedDevice is null');
@@ -283,10 +283,10 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
       await Future.delayed(const Duration(seconds: 3));
       if (isFromWebView && webViewStateManager.controller != null) {
-        webViewStateManager.controller!.runJavaScript("updateSSID('$selectedWifi')");
         if (mounted && !completer.isCompleted) {
           completer.complete();
-          return Navigator.pop(context, true);
+          Navigator.pop(context, true);
+          return await webViewStateManager.controller!.runJavaScript("getStates();");
         }
       }
       connectSdkService.startScan();
@@ -310,17 +310,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
         isLoading = false;
       });
     }
-  }
-
-  Future<bool> checkWifiConnection() async {
-    String currentWifi = await wifiService.getCurrentSSID();
-    if (currentWifi != selectedWifi) {
-      messageService.messageController.add('first_use.register.connect_to_wifi.wifi_different'.tr(namedArgs: {'currentWifi' : currentWifi}));
-      return false;
-    } else {
-      messageService.messageController.add('');
-    }
-    return true;
   }
 
   void errorListener(error) {
