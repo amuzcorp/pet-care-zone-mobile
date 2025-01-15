@@ -35,46 +35,47 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   final ApiService apiService = ApiService();
   final DeviceService deviceService = DeviceService();
   final LunaService lunaService = LunaService();
-  String? lastLog = "";
-  int countdown = 0;
-  bool isCountdownRunning = false;
-  bool isProcessingEvent = false;
-  Timer? pincodeTimer;
+  Map<String, dynamic> deviceInfo = {};
   List<String> errorList = [];
 
   @override
   void initState() {
     super.initState();
-    connectSdkService.logStream.listen(handleLogEvent);
+    setDeviceInfo();
+    connectSdkService.startLogSubscription((data) {
+      handleLogEvent(data);
+    });
   }
 
   @override
   void dispose() {
+    connectSdkService.logSubscription!.cancel();
+    connectSdkService.logSubscription = null;
     pincodeController.dispose();
-    pincodeTimer?.cancel();
     super.dispose();
+  }
+
+  Future setDeviceInfo() async {
+    deviceInfo = await deviceService.getWebOSDeviceInfo();
   }
 
   void handleLogEvent(String event) async {
     if (mounted) {
-      if (event.contains("rejected") || event.contains('invalid') || event.contains("many")) {
-        messageHandler("first_use.register.connect_to_device.pincode.connect.error.wrong_pincode".tr());
-        final deviceInfo = await deviceService.getWebOSDeviceInfo();
-        await lunaService.allowPincodeRequest();
-        await connectSdkService.requestParingKey(deviceInfo);
+      if (event.contains('rejected') || event.contains('invalid')) {
+        requestPincode(true);
+      }
+
+      if (event.contains('many')) {
+        messageHandler("too many pairing requests.");
       }
 
       if (event.contains('error')) {
-        errorList = [];
+        errorList.clear();
         errorList.add(event);
       }
-      // if (event.contains("many")) {
-      //   startCountdown();
-      // }
 
       if (event.contains('registered')) {
         messageHandler("");
-        connectSdkService.stopScan();
         WidgetsBinding.instance.addPostFrameCallback((_) {
           Navigator.push(context, MaterialPageRoute(builder: (context) => const RegisterPage()));
         });
@@ -82,30 +83,18 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
     }
   }
 
-  messageHandler(String message) {
-    return messageService.addMessage(message);
+  void requestPincode(bool isShowMessage) async {
+    if (isShowMessage) {
+      messageHandler("first_use.register.connect_to_device.pincode.connect.error.wrong_pincode".tr());
+    } else {
+      messageHandler("too many pairing requests.");
+    }
+    await connectSdkService.requestParingKey(deviceInfo);
   }
 
-  // void startCountdown() {
-  //   if (isCountdownRunning) return;
-  //
-  //   isCountdownRunning = true;
-  //   countdown = 30;
-  //
-  //   pincodeTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-  //     countdown--;
-  //
-  //     if (countdown > 0) {
-  //       messageHandler("*PIN Code 요청이 너무 많아요. $countdown초 후\n뒤로 돌아가 다음 버튼을 다시 눌러주세요.");
-  //     } else {
-  //       timer.cancel();
-  //       pincodeTimer?.cancel();
-  //       isCountdownRunning = false;
-  //       messageHandler("*PIN Code 요청을 다시 시도해 주세요.");
-  //       lastLog = null;
-  //     }
-  //   });
-  // }
+  void messageHandler(String message) {
+    return messageService.addMessage(message);
+  }
 
   @override
   Widget build(BuildContext context) {
