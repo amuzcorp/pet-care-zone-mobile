@@ -41,24 +41,21 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   }
 
   Future registerDeviceInfo() async {
-    if (deviceId.isNotEmpty && deviceName.isNotEmpty && modelNumber.isNotEmpty) {
-      final deviceInfo = DeviceModel(deviceId: deviceId, serialNumber: modelNumber, deviceName: deviceName);
-      setState(() {
-        isLoading = true;
-      });
-      await deviceService.registerDevice(
-        deviceId,
-        deviceName,
-        modelNumber,
-      );
-      await deviceService.provisionDevice(deviceId!);
-      await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
-      setState(() {
-        isLoading = false;
-      });
-    } else {
-      guideMessage = '제품 정보를 먼저 등록해 주세요.';
-    }
+    await getWebOSDeviceInfo();
+    final deviceInfo = DeviceModel(deviceId: deviceId, serialNumber: modelNumber, deviceName: deviceName);
+    setState(() {
+      isLoading = true;
+    });
+    await deviceService.registerDevice(
+      deviceId,
+      deviceName,
+      modelNumber,
+    );
+    await deviceService.provisionDevice(deviceId!);
+    await deviceService.saveLocalDeviceInfo(deviceInfo.toJson());
+    setState(() {
+      isLoading = false;
+    });
   }
 
   void _updateDeviceName(String newName) {
@@ -77,7 +74,6 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
   @override
   void initState() {
     super.initState();
-    getWebOSDeviceInfo();
   }
 
   @override
@@ -119,7 +115,7 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
             text: "first_use.register.connect_to_device.register.register_pet_profile".tr(),
             onPressed: () async {
               await registerDeviceInfo();
-              if (mounted) {
+              if (mounted && deviceId.isNotEmpty && deviceName.isNotEmpty && modelNumber.isNotEmpty) {
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
@@ -129,6 +125,8 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
                       ),
                     ),
                   );
+              } else {
+                guideMessage = "first_use.register.connect_to_device.register.register_fail".tr();
               }
             },
           ),

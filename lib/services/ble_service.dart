@@ -22,9 +22,12 @@ class BleService {
 
   Future bleConnectToDeviceFromWebView() async {
     connectedDevice = await deviceService.getConnectedBleDevice();
-    if (connectedDevice != null) {
+    if (connectedDevice != null || connectedDevice.isConnected) {
       try {
+        /** Cache clear 하지 않으면 재연결 시 write 되지 않음 */
+        await connectedDevice.clearGattCache();
         await connectedDevice.disconnect();
+        await Future.delayed(const Duration(seconds: 5));
         await connectedDevice.connect();
         logD.i('connected to device ble.');
       } catch (e) {

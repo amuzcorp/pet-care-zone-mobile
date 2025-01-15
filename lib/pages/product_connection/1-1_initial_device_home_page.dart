@@ -109,7 +109,9 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   @override
   void dispose() {
-    connectSdkService.logSubscription!.cancel();
+    if (connectSdkService.logSubscription != null) {
+      connectSdkService.logSubscription!.cancel();
+    }
     super.dispose();
   }
 

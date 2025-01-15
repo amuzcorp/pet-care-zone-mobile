@@ -59,7 +59,8 @@
           "product_name": "Product name",
           "change_product_name": "You can change the product name.",
           "register_additional_information": "Register additional information for more accurate services",
-          "register_pet_profile": "Register Pet Profile"
+          "register_pet_profile": "Register Pet Profile",
+          "register_fail": "The product is not registered. Please go back and proceed again."
         }
       }
     }

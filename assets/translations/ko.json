@@ -59,7 +59,8 @@
           "product_name": "제품 닉네임",
           "change_product_name": "제품 이름을 바꿀 수 있어요.",
           "register_additional_information": "더 정확한 서비스를 위해 추가 정보 등록하기 >",
-          "register_pet_profile": "펫 프로필 등록"
+          "register_pet_profile": "펫 프로필 등록",
+          "register_fail": "제품이 등록되지 않았어요. 뒤로 돌아가 다시 진행해 주세요."
         }
       }
     }
