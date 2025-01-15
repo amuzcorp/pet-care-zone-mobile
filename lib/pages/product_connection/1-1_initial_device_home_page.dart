@@ -78,7 +78,7 @@ class _InitialDeviceHomePageState extends State<InitialDeviceHomePage> {
 
   Future<void> userInfoLoad() async {
     await getFcmInfo();
-    validateUserInfo();
+    await validateUserInfo();
     firebaseService.refreshFcmToken();
   }
 

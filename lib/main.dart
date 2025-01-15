@@ -41,7 +41,6 @@ void main() async {
       )
     );
   }, (error, stack) {
-
   });
 
 }
@@ -56,12 +55,10 @@ class PetCareZone extends StatefulWidget {
 class PetCareZoneState extends State<PetCareZone> {
   final AppLifecycleStateChecker lifecycleObserver = AppLifecycleStateChecker();
   final WebViewStateManager stateManager = WebViewStateManager();
-  final UserService userService = UserService();
-  late Future<Widget> _initialPage;
+
   @override
   void initState() {
     super.initState();
-    _initialPage = userService.initializeApp();
     WidgetsBinding.instance.addObserver(lifecycleObserver);
     lifecycleObserver.initializeFirebaseListeners();
   }
