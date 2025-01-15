@@ -281,7 +281,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       await bleService.setRegistration();
       await bleService.sendWifiCredentialsToBLE(selectedWifi, password);
-      await Future.delayed(const Duration(seconds: 3));
+      await Future.delayed(const Duration(seconds: 5));
       if (isFromWebView && webViewStateManager.controller != null) {
         if (mounted && !completer.isCompleted) {
           completer.complete();
@@ -322,7 +322,6 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
       messageService.messageController.add('first_use.register.connect_to_wifi.error'.tr(namedArgs: {'error' : error}));
       connectToWifiAndDevice();
     }
-    print('bleErrorText $error');
   }
 
   bool checkPassword() {
