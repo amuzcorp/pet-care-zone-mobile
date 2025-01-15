@@ -69,6 +69,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
   bool isShowBottomSheet = false;
   bool isShowSubBottomSheet = false;
   bool isShowModal = false;
+  int backStep = 0;
+  String replaceRoute = "";
+  String replaceRouteState = "";
 
   Uint8List? aiPresetImg;
 
@@ -413,7 +416,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           Uri.parse('https://www.animal.go.kr'),
         );
         break;
-
       default:
         if (message.message.startsWith('data:image/png')) {
           return await saveFile(message.message, 'png');
@@ -444,6 +446,18 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
             );
           }
         }
+        if (message.message.startsWith("backStep")) {
+          int value = int.parse(message.message.split(':')[1]);
+          backStep = value;
+          break;
+        }
+        if (message.message.startsWith("replaceRoute")) {
+          String replaceRouteValue = message.message.split('=')[1];
+          String replaceStateValue = message.message.split('=')[2];
+          replaceRoute = replaceRouteValue;
+          replaceRouteState = replaceStateValue;
+          break;
+        }
         break;
     }
   }
@@ -465,8 +479,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
 
       img.Image? originalImage = img.decodeImage(bytes);
       if (originalImage != null) {
-        img.Image resizedImage = img.copyResize(originalImage, width: 500);
-        List<int> compressedBytes = img.encodeJpg(resizedImage, quality: 70);
+        List<int> compressedBytes = img.encodeJpg(originalImage, quality: 60);
         String? base64String = base64Encode(compressedBytes);
         stateManager.runJavaScript(
             'window.changeFile("data:image/jpeg;base64,$base64String")');
@@ -507,6 +520,17 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     if (splittedUrl.isEmpty) {
       return true;
     }
+    if (replaceRoute.isNotEmpty) {
+      stateManager.runJavaScript(
+          "window.replacePage('$replaceRoute', $replaceRouteState);");
+
+      return false;
+    }
+    if (backStep != 0) {
+      stateManager.runJavaScript("window.moveBackByStep(${backStep});");
+      return false;
+    }
+
     String path = splittedUrl.last;
     switch (path) {
       case "home":
@@ -523,15 +547,9 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
         stateManager.runJavaScript("window.moveHome();");
         return false;
       default:
-        if (splittedUrl.contains("ai-health") &&
-            splittedUrl.contains("result")) {
-          logD.i("AI Health 결과 페이지 뒤로가기.");
-          stateManager.runJavaScript("window.moveBackByStep(-3);");
-        } else {
-          logD.i("JavaScript로 일반 뒤로가기 처리.");
-          stateManager.runJavaScript(
-              "if (window.location.pathname !== '/') { window.history.back(); }");
-        }
+        logD.i("JavaScript로 일반 뒤로가기 처리.");
+        stateManager.runJavaScript(
+            "if (window.location.pathname !== '/') { window.history.back(); }");
         return false;
     }
   }

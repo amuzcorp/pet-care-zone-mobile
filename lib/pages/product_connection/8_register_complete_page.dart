@@ -99,6 +99,8 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
               color: ColorConstants.inputLabelColor,
             ),
           ),
+          boxH(10),
+          isLoading ? const GradientCircularLoader() : Container(),
         ],
       ),
       bottomButton: Column(
