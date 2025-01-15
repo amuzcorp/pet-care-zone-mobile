@@ -2,6 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:petcarezone/constants/color_constants.dart';
 import 'package:petcarezone/constants/font_constants.dart';
+import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/widgets/box/box.dart';
 
@@ -41,7 +42,7 @@ class _DeviceListPageState extends State<DeviceListPage> {
           boxH(80),
           Row(
             children: [
-              FontConstants.inputLabelText('first_use.register.connect_to_ble.nearby_product'.tr()),
+              FontConstants.inputLabelText('first_use.register.connect_to_ble.nearby_products'.tr()),
               SizedBox(
                 width: 30,
                 height: 30,

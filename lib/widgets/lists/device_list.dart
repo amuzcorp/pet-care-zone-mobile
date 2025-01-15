@@ -1,12 +1,9 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:petcarezone/constants/color_constants.dart';
-import 'package:petcarezone/pages/product_connection/2_device_list_page.dart';
 import 'package:petcarezone/pages/product_connection/3_wifi_connection_page.dart';
-import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 
@@ -14,7 +11,6 @@ import '../../constants/image_constants.dart';
 import '../../constants/size_constants.dart';
 import '../../services/device_service.dart';
 import '../../utils/logger.dart';
-import '../box/box.dart';
 import '../indicator/indicator.dart';
 
 class DeviceList extends StatefulWidget {
@@ -28,15 +24,9 @@ class DeviceList extends StatefulWidget {
 
 class _DeviceListState extends State<DeviceList> with RouteAware {
   final ConnectSdkService connectSdkService = ConnectSdkService();
-  final BleService bleService = BleService();
   final DeviceService deviceService = DeviceService();
   final MessageService messageService = MessageService();
   final double itemHeight = 87.0;
-
-  Future<void> bleConnectToDevice(BluetoothDevice device) async {
-    await device.disconnect();
-    await device.connect();
-  }
 
   Future<void> saveDevicesAndNavigate(Map<String, dynamic> device) async {
     widget.onLoadingChanged?.call(true);
@@ -44,11 +34,10 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
     final BluetoothDevice bluetoothDevice = device['scanResult'].device;
     try {
       /// BLE 기기 연결
-      await bleConnectToDevice(bluetoothDevice);
+      await bluetoothDevice.connect();
 
       /// BLE Data
       await deviceService.saveBleInfo(bluetoothDevice);
-
       if (mounted) {
         Navigator.pushReplacement(
           context,
@@ -65,6 +54,7 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
       widget.onLoadingChanged?.call(false);
     }
   }
+
   @override
   void initState() {
     super.initState();
@@ -86,6 +76,7 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: connectSdkService.bleStream,
             builder: (context, snapshot) {
+              print('StreamBuilder: snapshot state: ${snapshot.connectionState}, data: ${snapshot.data}');
               if (snapshot.connectionState == ConnectionState.waiting ||
                   !snapshot.hasData ||
                   snapshot.data == null ||
@@ -99,12 +90,12 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
                 return Center(child: Text('Error: ${snapshot.error}'));
               }
 
-              final devices = snapshot.data!.toList();
+              final List devices = snapshot.data!;
 
-              final maxContainerHeight = MediaQuery.of(context).size.height - 20.0;
-              final containerHeight = (devices.length * itemHeight).clamp(itemHeight, maxContainerHeight);
+              if (snapshot.data!.isNotEmpty) {
+                final maxContainerHeight = MediaQuery.of(context).size.height - 20.0;
+                final containerHeight = (devices.length * itemHeight).clamp(itemHeight, maxContainerHeight);
 
-              if (devices.isNotEmpty) {
                 return ClipRRect(
                   borderRadius: BorderRadius.circular(SizeConstants.borderSize),
                   child: Container(
@@ -117,7 +108,7 @@ class _DeviceListState extends State<DeviceList> with RouteAware {
                       padding: const EdgeInsets.symmetric(vertical: 10.0),
                       itemCount: devices.length,
                       itemBuilder: (context, index) {
-                        final device = devices[index];
+                        final Map<String, dynamic> device = devices[index];
                         return ListTile(
                           key: ValueKey(device['id']),
                           leading: Image.asset(ImageConstants.productConnectionGuide3),

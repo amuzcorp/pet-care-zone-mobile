@@ -129,6 +129,12 @@ class ConnectSdkService {
   }
 
   Future startBleScan() async {
+    // BLE 스캔 타이머 중지
+    if (bleScanTimer != null && bleScanTimer!.isActive) {
+      bleScanTimer!.cancel();
+      logD.i("Existing BLE scan timer canceled");
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final isPermitted = prefs.getBool('isPermitted') ?? false;
 
@@ -138,6 +144,10 @@ class ConnectSdkService {
         timeout: const Duration(seconds: 5),
       );
     });
+
+    if (!isPermitted) {
+      permissionCheck.requestPermission();
+    }
 
     FlutterBluePlus.scanResults.listen((results) {
       if (results.isNotEmpty) {
@@ -164,10 +174,6 @@ class ConnectSdkService {
             }
           }
         }
-      } else {
-        if (!isPermitted) {
-          permissionCheck.requestPermission();
-        }
       }
 
       if (!bleStreamController.isClosed) {
@@ -177,14 +183,9 @@ class ConnectSdkService {
     });
   }
 
-  Future<void> stopBleScan() async {
+  void stopBleScan() async {
     if (bleScanTimer != null && bleScanTimer!.isActive) {
       bleScanTimer!.cancel();
-      try {
-        logD.i("Scan stopped successfully");
-      } on PlatformException catch (e) {
-        logD.w("Failed to stop scan: '${e.message}'.");
-      }
     } else {
       logD.w("Scan timer was not active or already cancelled");
     }

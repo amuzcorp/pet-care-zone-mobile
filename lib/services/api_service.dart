@@ -159,4 +159,21 @@ class ApiService {
       isToken: true,
     );
   }
+
+  Future<Map<String, dynamic>?> doGetStates({
+    required String? deviceId,
+    required int? petId,
+  }) async {
+    Map<String, dynamic> requestBody = {
+      'deviceId': deviceId,
+      'petId' : petId
+    };
+
+    return await request(
+      url: ApiUrls.doGetStates,
+      body: requestBody,
+      method: 'POST',
+      isToken: true,
+    );
+  }
 }
