@@ -99,14 +99,13 @@ class _RegisterCompletePageState extends State<RegisterCompletePage> {
               color: ColorConstants.inputLabelColor,
             ),
           ),
-          boxH(10),
-          isLoading ? const GradientCircularLoader() : Container(),
         ],
       ),
       bottomButton: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           isLoading ? const GradientCircularLoader() : Container(),
+          boxH(10),
           BasicButton(
             text: 'first_use.register.connect_to_device.register.register_additional_information'.tr(),
             backgroundColor: Colors.transparent,
