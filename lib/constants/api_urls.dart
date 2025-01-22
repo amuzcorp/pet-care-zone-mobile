@@ -31,12 +31,14 @@ class ApiUrls {
   static const String stayedTimeHistory = '/history/stayed-time';
 
   /// WebOS Urls
-  static const String allowPincodeRequest = 'luna-send -n 1 -f luna://com.webos.service.secondscreen.gateway/unpairAll';
+  static const String testApi = 'ssap://com.webos.service.tvpower/power/getPowerState';
+  static const String unpairPincodeRequest = 'ssap://com.webos.service.secondscreen.gateway/unpairAll';
   static const Map resetDevice = {
     'uri': 'luna://com.webos.service.petcareservice/petcontrol',
     'payload': {"command": "initialSettingReset"}
   };
   static const String lunaProvisionUrl = 'ssap://com.webos.service.petcareservice/mqtt/executeProvisioning';
+  static const String getWifiProfileList = 'luna://com.webos.service.wifi/getprofilelist';
   static Map registerUserProfile = {
     'uri': 'ssap://com.webos.service.petcareservice/mqtt/setPetInfo',
     'payload': {"userId" : "", "petId" : 0}
