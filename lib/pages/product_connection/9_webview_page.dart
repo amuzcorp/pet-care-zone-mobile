@@ -151,6 +151,7 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     context.setTrustedCertificatesBytes(rootCA.buffer.asUint8List());
     try {
       client
+        ..resubscribeOnAutoReconnect = true
         ..useWebSocket = false
         ..port = 8883
         ..secure = true
@@ -210,12 +211,22 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
     final recMess = c[0].payload as MqttPublishMessage;
     final pt = MqttUtilities.bytesToStringAsString(recMess.payload.message!);
     final topic = c[0].topic;
+    final Map<String, dynamic>? subscribeMessage = jsonDecode(pt)['iot_event_message'];
 
     if (topic == "iot/petcarezone/topic/events/$deviceId") {
       stateManager.runJavaScript("handleEventTopicEvent($pt);");
     }
     if (topic == "iot/petcarezone/topic/states/$deviceId") {
       stateManager.runJavaScript("handleStateTopicEvent($pt);");
+      final String ssid = subscribeMessage?['ssid'];
+      if (ssid != null && ssid.isNotEmpty) {
+        logD.e('SSID 값: $ssid');
+        stateManager.runJavaScript("window.networkCheck('$ssid');");
+      }
+      if (ssid == null || ssid.isEmpty) {
+        logD.e('SSID is null');
+        stateManager.runJavaScript("window.networkCheck('null');");
+      }
     }
     logD.i(
         'EXAMPLE::Change notification:: topic is <${c[0].topic}>, payload is <-- $pt -->');
@@ -332,7 +343,6 @@ class _WebViewPageState extends State<WebViewPage> with WidgetsBindingObserver {
           await stateManager.runJavaScript(
               "navigateToPetCareSection('$fcmUri', '${widget.historyPeriod}');");
           widget.fcmUri = null;
-          print('widget.fcmUri ${widget.fcmUri}');
         }
         break;
       case "register":

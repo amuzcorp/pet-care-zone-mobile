@@ -161,8 +161,8 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> doGetStates({
-    required String? deviceId,
-    required int? petId,
+    required String deviceId,
+    required int petId,
   }) async {
     Map<String, dynamic> requestBody = {
       'deviceId': deviceId,

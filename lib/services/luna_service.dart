@@ -16,6 +16,25 @@ class LunaService {
     }
   }
 
+  Future test() async {
+    const String uri = ApiUrls.testApi;
+    try {
+      webOSRequest(uri, {});
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
+  Future getWifiProfileList() async {
+    const String uri = ApiUrls.getWifiProfileList;
+    try {
+      webOSRequest(uri, {});
+    } catch (e) {
+      throw Exception('Failed Response $e');
+    }
+  }
+
+
   Future startProvision() async {
     const String uri = ApiUrls.lunaProvisionUrl;
     try {
@@ -25,8 +44,8 @@ class LunaService {
     }
   }
 
-  Future allowPincodeRequest() async {
-    const String uri = ApiUrls.allowPincodeRequest;
+  Future unpairPincodeRequest() async {
+    const String uri = ApiUrls.unpairPincodeRequest;
     try {
       webOSRequest(uri, {});
     } catch (e) {

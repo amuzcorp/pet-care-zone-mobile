@@ -51,6 +51,7 @@ class _PincodeConnectionPageState extends State<PincodeConnectionPage> {
   void dispose() {
     connectSdkService.logSubscription!.cancel();
     connectSdkService.logSubscription = null;
+    lunaService.unpairPincodeRequest();
     pincodeController.dispose();
     super.dispose();
   }

@@ -6,11 +6,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:petcarezone/constants/font_constants.dart';
 import 'package:petcarezone/pages/product_connection/4_pincode_check_page.dart';
+import 'package:petcarezone/services/api_service.dart';
 import 'package:petcarezone/services/ble_service.dart';
 import 'package:petcarezone/services/connect_sdk_service.dart';
 import 'package:petcarezone/services/device_service.dart';
 import 'package:petcarezone/services/message_service.dart';
 import 'package:petcarezone/utils/webview_state_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../constants/color_constants.dart';
 import '../../constants/size_constants.dart';
@@ -35,6 +37,7 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   final MessageService messageService = MessageService();
   final DeviceService deviceService = DeviceService();
   final ConnectSdkService connectSdkService = ConnectSdkService();
+  final ApiService apiService = ApiService();
   final TextEditingController passwordController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
   final WebViewStateManager webViewStateManager = WebViewStateManager();
@@ -48,6 +51,8 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
   String selectedWifi = "";
   String selectedSecurityType = "";
   String password = "";
+  String deviceId = "";
+  int petId = 0;
   bool isLoading = false;
   bool isDropdownOpen = false;
   bool isFromWebView = false;
@@ -259,6 +264,9 @@ class _WifiConnectionPageState extends State<WifiConnectionPage> {
     try {
       if (isFromWebView) {
         await bleService.bleConnectToDeviceFromWebView();
+        final prefs = await SharedPreferences.getInstance();
+        deviceId = prefs.getString('deviceId')!;
+        petId = prefs.getInt('petId')!;
       }
       await bleService.getCharacteristics();
     } catch (e) {
